@@ -1,6 +1,6 @@
 # SAÜ-Kovan — Argon Frontend (`frontend/`)
 
-React + Vite + Tailwind CSS ile hazırlanmış demo operasyon konsoludur. Uygulanan API sözleşmesi `../contracts/openapi.json` dosyasındadır. Canlı mod sunucu durumunu kullanır; simülatör bağımsız sunum provası içindir.
+React + Vite uygulamasıdır. `/` sade öğrenci ekranı; `/demo` ayrı yüklenen teknik operasyon konsoludur. Uygulanan API sözleşmesi `../contracts/openapi.json` dosyasındadır. Öğrenci ekranı yalnız canlı sunucu durumunu kullanır; konsoldaki simülatör bağımsız sunum provası içindir.
 
 ## Hızlı Kurulum ve Çalıştırma
 
@@ -13,13 +13,15 @@ React + Vite + Tailwind CSS ile hazırlanmış demo operasyon konsoludur. Uygula
    npm run dev
    ```
 3. Vite otomatik olarak `/api` isteklerini HTTP üzerinden, `/api/events` WebSocket bağlantılarını ise WS üzerinden backend'e proxy'ler; böylece tarayıcı oturum çerezi (`cookie`) sorunsuz saklanır.
-4. Proje kökündeki `.local/demo-access.json` dosyası hesap kimliğini erişim koduna eşler. İlgili rolü seçip kodunu üst bardaki parola alanına girin. Rol seçmek tek başına yetki vermez; sunucunun döndürdüğü kimlik geçerlidir. Kod girişten sonra alandan temizlenir ve günlükte gizlenir. Daha önce giriş yapılan hesaba aynı sayfa içinde tekrar geçilebilir; sayfa yenilenince bellekteki kodlar silinir.
+4. Proje kökündeki `.local/demo-access.json` dosyası hesap kimliğini erişim koduna eşler. Öğrenci ekranındaki **Giriş yap** penceresine öğrenci kodunu girin; bu kod saklanmaz. Teknik konsolda ise rol seçip kodunu üst bardaki parola alanına girin. Rol seçmek tek başına yetki vermez; sunucunun döndürdüğü kimlik geçerlidir. Konsoldaki kodlar günlükte gizlenir; aynı sayfa içinde hesaplar arasında geçiş için bellekte tutulur ve sayfa yenilenince silinir.
 
-Varsayılan önizleme: http://127.0.0.1:5173. Sayfa **Canlı Backend (/api + WS)** modunda açılır. Katalog ve kenarlar bootstrap'tan okunur; WebSocket durumları ekrana uygulanır. Bağlantı kesilirse yeniden bağlanma ve REST yedeği devreye girer. Canlı işlem hatası yerel başarıya çevrilmez.
+Varsayılan öğrenci önizlemesi: http://127.0.0.1:5173. Seçilen buluşma noktası, yurt ve çıkış saati `POST /api/intents` ile kaydedilir; grup önerisi bundan sonra istenir. Her öğrenci yalnız kendi kabulünü ve yürüyüşünü işler. Giriş kodu saklanmaz, sayfa yenilemede mevcut çerezle plan geri yüklenir. `src/student/` API erişimi, durum seçimi, bağlantı yönetimi ve ekranları ayırır.
+
+Teknik konsol: http://127.0.0.1:5173/demo. **Canlı Backend (/api + WS)** modunda açılır. Katalog ve kenarlar bootstrap'tan okunur; WebSocket durumları ekrana uygulanır. Bağlantı kesilirse yeniden bağlanma ve REST yedeği devreye girer. Canlı işlem hatası yerel başarıya çevrilmez. Aynı tarayıcıdaki sekmeler çerezi paylaşır; eşzamanlı farklı roller için ayrı tarayıcı profilleri kullanın.
 
 Sunum sırası: presenter ile üç öğrencili reset; student-01 ile preview; student-01/02/03 ile ayrı ayrı kabul; student-01 ile yürüyüş ve yardım; operator ile ACK/atama; guard-01 ile kabul/varış; operator ile kapatma; öğrenci ile yürüyüş tamamlama.
 
-Kontrol: `npm test` ve `npm run build`. Gerçek GPS, öğrenci/kimlik doğrulaması ve resmî güvenlik bağlantısı bu sürümde yoktur.
+Kontrol: `npm test` ve `npm run build`. Gerçek öğrenci/kimlik doğrulaması, sürekli konum takibi ve resmî güvenlik bağlantısı yoktur. Yardım anında izinle tek seferlik cihaz konumu alınabilir. Google rota ve WhatsApp adaptörleri, gerekli anahtarlar olmadan gerçek servis çağrısı yapmaz. Yeni komutsuz demo paneli ve kurulum için `../docs/INTEGRATIONS.md` dosyasına bakın.
 
 ## Pilot kuralları
 - **Sabit Pilot Noktaları:** Yalnızca `meet_library`, `meet_cinaralti`, `meet_campus_gate`, `meet_campus_market` başlangıçları ve `dorm_sabahattin_zaim`, `dorm_rahime_sultan`, `dorm_ayse_humeyra_okten`, `dorm_esentepe` varışları kullanılır (422 koruması).

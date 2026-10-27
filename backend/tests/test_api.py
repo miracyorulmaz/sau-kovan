@@ -204,6 +204,32 @@ def test_disabled_arrival_timer_and_completed_walk_have_no_alert(demo):
     assert app.state.repo.read()["assistances"] == {}
 
 
+def test_completed_student_can_search_again_without_rejoining_old_walking_group(demo):
+    client, _, _, _ = demo
+    walk = prepare_walk(demo)
+    assert client.post(f"/api/walks/{walk['id']}/complete", json={"expected_version": walk["version"]}).status_code == 200
+    assert client.post("/api/intents", json=window()).status_code == 201
+    response = client.post("/api/matches/preview")
+    assert response.status_code == 200
+    assert response.json()["data"]["pod"] is None
+
+
+def test_student_who_missed_departure_can_replan_without_stopping_a_peers_walk(demo):
+    client, app, login, _ = demo
+    walk = prepare_walk(demo)
+    past = (datetime.now(UTC) - timedelta(minutes=1)).isoformat()
+    def miss_departure(state):
+        state["pods"][walk["pod_id"]]["latest_departure_at"] = past
+        for intent in state["intents"].values():
+            if intent["owner_id"] == "student-02":
+                intent["latest_at"] = past
+    app.state.repo.mutate("test", "miss.departure", miss_departure)
+    login("student-02")
+    assert client.post("/api/intents", json=window()).status_code == 201
+    assert client.post("/api/matches/preview").json()["data"]["pod"] is None
+    assert app.state.repo.read()["walks"][walk["id"]]["status"] == "WALKING"
+
+
 def test_late_operator_can_ack_and_status_not_falsely_dispatched(demo):
     client, app, login, _ = demo
     walk = prepare_walk(demo)

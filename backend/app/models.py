@@ -44,12 +44,52 @@ class WalkStart(RequestModel):
     pod_id: str = Field(max_length=80)
     arrival_check_enabled: bool = False
     estimated_duration_seconds: int = Field(default=900, ge=60, le=7200)
+    map_preview_id: str | None = Field(default=None, max_length=80)
+
+
+class LocationFix(RequestModel):
+    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    accuracy_m: float = Field(ge=0, le=100000, allow_inf_nan=False)
+    captured_at: AwareDatetime
+    source: Literal["DEVICE", "DEMO"] = "DEVICE"
 
 
 class AssistanceCreate(RequestModel):
     walk_id: str = Field(max_length=80)
     reason: Literal["ESCORT_REQUEST", "HELP_REQUEST"] = "HELP_REQUEST"
     idempotency_key: str = Field(min_length=8, max_length=80)
+    location: LocationFix | None = None
+    location_status: Literal["AVAILABLE", "DENIED", "TIMEOUT", "UNAVAILABLE", "NOT_REQUESTED"] = "NOT_REQUESTED"
+
+
+class EmergencyContact(RequestModel):
+    name: str = Field(min_length=2, max_length=80)
+    phone_e164: str = Field(pattern=r"^\+[1-9]\d{7,14}$")
+    consent_confirmed: bool
+    notify_on_help: bool = True
+    share_location_on_help: bool = True
+
+
+class EmergencyCreate(RequestModel):
+    idempotency_key: str = Field(min_length=8, max_length=80)
+    message: str = Field(default="Kampüs dışında desteğe ihtiyacım var.", min_length=1, max_length=500)
+    location: LocationFix | None = None
+    location_status: Literal["AVAILABLE", "DENIED", "TIMEOUT", "UNAVAILABLE", "NOT_REQUESTED"] = "NOT_REQUESTED"
+
+
+class DemoCompanions(RequestModel):
+    immediate: bool = False
+
+
+class DemoAction(VersionCommand):
+    unit_id: str = Field(default="guard-01", max_length=80)
+
+
+class MapPoint(RequestModel):
+    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    confirmed: bool
 
 
 class Assignment(VersionCommand):

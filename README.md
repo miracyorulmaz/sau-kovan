@@ -24,7 +24,9 @@ Başlangıçlar: Kütüphane, Çınaraltı, kampüs girişi, kampüs market ön�
 - İsteğe bağlı sunucu varış teyidi; cevapsızsa inceleme kaydı. Saldırı sonucu çıkarılmaz.
 - SQLite kalıcılığı, varlık sürüm kontrolü, role göre filtreli WebSocket durumları ve gecikme işaretleri.
 
-Argon'un React arayüzü `frontend/` klasöründedir; canlı API, role göre oturum ve WebSocket durumları bağlanmıştır. API etkileşimli dokümantasyonu `/docs` yolundadır. Gerçek GPS/sapma ölçümü, e-posta kayıt sistemi ve güvenlik entegrasyonu uygulanmadı.
+React arayüzü `frontend/` klasöründedir. `/` öğrencinin sade planlama, grup kabulü, yürüyüş ve yardım ekranıdır; `/demo` Argon'un teknik operasyon konsoludur. Canlı API, role göre oturum ve WebSocket durumları bağlanmıştır. API etkileşimli dokümantasyonu `/docs` yolundadır. Sürekli GPS takibi/sapma ölçümü, e-posta kayıt sistemi ve resmî güvenlik entegrasyonu uygulanmadı.
+
+Öğrenci ekranındaki **Demo kontrolü** komutsuz arkadaş ekleme/onay, demo saatini şimdiye alma, operatör/görevli zinciri ve kişisel bildirim kutusunu içerir. Çıkış tarih-saatini elle seçerek 3 veya 10 saat sonrası için plan açılabilir. Google yürüyüş rotası/süre önizlemesi ile WhatsApp bildirim adaptörü eklendi; anahtarlar yokken gerçek rota veya mesaj üretilmez. Kampüs dışı kişisel yardım ve isteğe bağlı tek seferlik cihaz konumu, grup/yürüyüşten bağımsızdır. [Kurulum ve uçtan uca prova](docs/INTEGRATIONS.md).
 
 ## Kurulum
 
@@ -45,7 +47,9 @@ Başlatma:
 
 Tek komut her iki sunucuyu başlatır. Önizleme: `http://127.0.0.1:5173`; API: `http://127.0.0.1:8000/docs`. Ctrl+C iki sunucuyu da kapatır. Yalnız backend için `-BackendOnly`; farklı portlar için `-Port 8001 -FrontendPort 5174` verilebilir. Kullanımdaki portta ikinci sunucu başlatılmaz.
 
-Arayüz **Canlı Backend (/api + WS)** modunda açılır. Önce `presenter` seçip yerel demo koduyla giriş yapın ve üç öğrenciyle sahneyi sıfırlayın. Ardından `student-01` ile eşleştirin; üç öğrenci de kendi koduyla oturum açıp kendi kabulünü verir. Her rolün kodu ilk geçişte istenir; aynı sayfa açıkken daha önce giriş yapılan role tekrar geçilebilir. Sayfa yenilenince kodlar bellekten silinir.
+Öğrenci ekranında bir buluşma noktası, yurt ve çıkış saati seçip **Yol arkadaşı bul** düğmesine basın. Öğrenci erişim koduyla giriş yapılır; seçimler sunucuya bir plan olarak kaydedilir. Grup bulunduğunda her öğrenci kendi hesabından kabul verir. Ortak çıkış aralığında yürüyüş başlatılır; yardım talebi ve varış onayı aynı ekrandadır. Giriş kodu saklanmaz; sayfa yenilendiğinde HttpOnly oturum çereziyle mevcut plan geri yüklenir.
+
+Sunum verisi hazırlamak ve görevli/operatör işlemleri için `/demo` kullanılır. Bu sayfa **Canlı Backend (/api + WS)** modunda açılır. Presenter ile reset yapılır; farklı öğrencilerin kabulü ayrı tarayıcı oturumlarından veya konsolda ilgili kodlarla gösterilebilir. Aynı tarayıcıdaki sekmeler oturum çerezini paylaşır; farklı öğrenci/operatör hesapları için ayrı tarayıcı profili veya farklı tarayıcı kullanın. Öğrenci ekranı yerel simülatöre bağlı değildir.
 
 İlk başlatmada `.local/demo-access.json` içinde her demo rolü için rastgele erişim kodu oluşturulur. Bu dosya ve SQLite `.gitignore` kapsamındadır; paylaşmayın, sunum ekranına koymayın. `POST /api/auth/demo-session` gövdesine `access_code` verilince HttpOnly oturum çerezi üretilir. Yanıt ve doğrulama hataları erişim kodunu geri yazmaz. `.local` klasörü kaybolursa eski kodlar kullanılamaz; ilk kurulumdan sonra yedeğini yalnızca güvenilen yerel ortamda tutun.
 
@@ -61,6 +65,12 @@ npm run build --prefix frontend
 `smoke_demo.py` sentetik senaryoyu sıfırlar; diğer açık demo oturumları da bu reseti görür. Gerçek kayıtlar desteklenmediği için bu komut gerçek kullanıcı verisi üzerinde kullanılmaz.
 
 ## Argon entegrasyonu
+
+### Tek kişiyle öğrenci demosu
+
+Öğrenci ekranında `student-01` ile bir plan oluşturduktan sonra proje kökünde `./demo-companions.ps1` çalıştırın. Bu yerel yardımcı, mevcut planı sıfırlamadan iki boş sentetik öğrenci hesabıyla uyumlu planlar ekler ve diğer üyelerin kabulünü ayrı oturumlarından verir. Öğrencinin kendi kabulünü vermez ve yürüyüşünü başlatmaz. Ekranda **Gruba katıl → Yürüyüşü başlat** adımlarını öğrenci tamamlar. Mevcut gruba tekrar çalıştırmak yeni üyeler eklemez.
+
+İleri saat seçtiyseniz, henüz herkes kabul etmeden `./demo-companions.ps1 -Now` seçilen nokta ve yurdu koruyarak demo planını şimdiye alır. Eski plan, grubun normal reddetme akışıyla kapatılır; tüm veriyi sıfırlayan reset kullanılmaz. Varsayılan öğrenci `student-01`; farklı hesap için `-StudentId student-06` verilebilir. Bu yardımcı yalnız localhost ve `DEMO_TEST` hesaplarında çalışır; normal öğrenci arayüzünde otomatik kabul yoktur.
 
 `contracts/openapi.json` uygulanan sözleşmedir. `docs/ARGON_HANDOFF.md` endpoint sırasını ve veri etiketlerini anlatır. Daha önce yazılan mimari planlar hedef kapsamı içerir; uygulanmış endpoint'ler için bu paketteki OpenAPI geçerlidir. Özellikle genel bir `/transition`, canlı GPS veya `/api/sandbox/recalculate` endpoint'i henüz yoktur.
 

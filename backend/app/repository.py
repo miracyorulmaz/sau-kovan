@@ -29,7 +29,8 @@ def initial_state():
                       ("guard-02", "guard"), ("presenter", "demo_admin")):
         users[key] = {"id": key, "display_name": key, "role": role, "is_synthetic": True}
     return {"run_id": secrets.token_hex(8), "revision": 1, "users": users, "intents": {}, "pods": {}, "walks": {},
-            "assistances": {}, "events": [], "closed_edges": [], "idempotency": {}}
+            "assistances": {}, "events": [], "closed_edges": [], "idempotency": {},
+            "emergency_contacts": {}, "emergencies": {}, "notifications": {}, "map_points": {}}
 
 
 class Repository:
@@ -51,6 +52,15 @@ class Repository:
             codes = {user_id: secrets.token_urlsafe(24) for user_id in state["users"]}
             self.db.executemany("INSERT INTO access_codes VALUES (?,?)", [(digest(code), user_id) for user_id, code in codes.items()])
             (data_dir / "demo-access.json").write_text(json.dumps(codes, ensure_ascii=False, indent=2), encoding="utf-8")
+        else:
+            state = json.loads(row[0])
+            changed = False
+            for key in ("emergency_contacts", "emergencies", "notifications", "map_points"):
+                if key not in state:
+                    state[key] = {}
+                    changed = True
+            if changed:
+                self.db.execute("UPDATE state SET payload=? WHERE id=1", (json.dumps(state, ensure_ascii=False),))
         self.db.commit()
 
     def read(self):

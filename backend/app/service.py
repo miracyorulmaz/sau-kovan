@@ -6,6 +6,7 @@ from .engines.matching import propose_groups
 from .engines.routing import demo_edges, find_route
 from .errors import DomainError
 from .repository import initial_state
+from .safety import SafetyService, fresh_location, queue_notification
 
 
 def now_utc():
@@ -39,8 +40,9 @@ def ensure_eligible(user, now):
 
 
 class Service:
-    def __init__(self, repository):
+    def __init__(self, repository, safety=None):
         self.repo = repository
+        self.safety = safety or SafetyService(repository)
 
     def envelope(self, data):
         state = self.repo.read()
@@ -57,6 +59,7 @@ class Service:
         role, uid = user["role"], user["id"]
         result = {"user": user, "pods": [], "walks": [], "assistances": [], "intents": [], "closed_edges": state["closed_edges"]}
         if role == "student":
+            result.update(self.safety.for_user(user))
             result["intents"] = [item for item in state["intents"].values() if item["owner_id"] == uid]
             result["walks"] = [item for item in state["walks"].values() if item["owner_id"] == uid]
             own_walks = {item["id"] for item in result["walks"]}
@@ -115,6 +118,9 @@ class Service:
                 raise DomainError("LOCATION_NOT_ALLOWED", "Yalnızca pilot buluşma noktası ve kız yurdu seçilebilir.", 422)
             if command.latest_at <= now_utc() or command.earliest_at > now_utc() + timedelta(days=1):
                 raise DomainError("INVALID_DEPARTURE_WINDOW", "Ayrılış aralığı güncel ve önümüzdeki 24 saat içinde olmalı.", 422)
+            for intent in state["intents"].values():
+                if intent["owner_id"] == actor["id"] and intent["status"] in ("WAITING", "PROPOSED") and datetime.fromisoformat(intent["latest_at"]) < now_utc():
+                    intent.update(status="EXPIRED", version=intent["version"] + 1)
             if any(i["owner_id"] == actor["id"] and i["status"] in ("WAITING", "PROPOSED", "WALKING") for i in state["intents"].values()):
                 raise DomainError("ACTIVE_INTENT_EXISTS", "Önce açık yürüyüş planınızı tamamlayın veya iptal edin.", 409)
             find_route(command.meeting_point_id, command.destination_dorm_id, state["closed_edges"])
@@ -139,8 +145,14 @@ class Service:
     def match(self, actor):
         def change(state):
             ensure_eligible(state["users"][actor["id"]], now_utc())
+            completed_pods = {walk["pod_id"] for walk in state["walks"].values()
+                              if walk["owner_id"] == actor["id"] and walk["status"] == "COMPLETED"}
+            walking_pods = {walk["pod_id"] for walk in state["walks"].values()
+                            if walk["owner_id"] == actor["id"] and walk["status"] == "WALKING"}
             for pod in state["pods"].values():
-                if actor["id"] in pod["member_ids"] and pod["status"] in ("PROPOSED", "ACCEPTED", "WALKING"):
+                if (actor["id"] in pod["member_ids"] and pod["status"] in ("PROPOSED", "ACCEPTED", "WALKING")
+                        and pod["id"] not in completed_pods
+                        and (datetime.fromisoformat(pod["latest_departure_at"]) >= now_utc() or pod["id"] in walking_pods)):
                     return {"pod": self.public_pod(pod, actor["id"]), "unmatched": []}
             eligible = []
             for intent in state["intents"].values():
@@ -186,7 +198,7 @@ class Service:
             return self.public_pod(pod, actor["id"])
         return self.repo.mutate(actor["id"], "pod.accepted" if accept else "pod.declined", change)
 
-    def start_walk(self, actor, command):
+    def start_walk(self, actor, command, route_override=None):
         def change(state):
             ensure_eligible(state["users"][actor["id"]], now_utc())
             pod = get_item(state["pods"], command.pod_id)
@@ -200,7 +212,7 @@ class Service:
                 raise DomainError("OUTSIDE_DEPARTURE_WINDOW", "Ortak ayrılış aralığında değilsiniz.", 409)
             if any(w["owner_id"] == actor["id"] and w["pod_id"] == pod["id"] for w in state["walks"].values()):
                 raise DomainError("WALK_ALREADY_STARTED", "Bu yürüyüş zaten başlatıldı.", 409)
-            route = find_route(pod["meeting_point_id"], pod["destination_dorm_id"], state["closed_edges"])
+            route = route_override or find_route(pod["meeting_point_id"], pod["destination_dorm_id"], state["closed_edges"])
             now = now_utc()
             walk = {"id": secrets.token_hex(8), "owner_id": actor["id"], "pod_id": pod["id"],
                     "meeting_point_id": pod["meeting_point_id"], "destination_dorm_id": pod["destination_dorm_id"],
@@ -257,7 +269,13 @@ class Service:
                 if item["walk_id"] != command.walk_id or item["reason"] != command.reason:
                     raise DomainError("IDEMPOTENCY_CONFLICT", "Aynı anahtar farklı talep için kullanılmış.", 409)
                 return item
+            if walk["status"] != "WALKING":
+                raise DomainError("INVALID_TRANSITION", "Yeni yürüyüş desteği yalnızca devam eden yürüyüşte istenebilir.", 409)
             item = self.new_assistance(state, command.walk_id, command.reason, now_utc())
+            location, location_status = fresh_location(command)
+            item.update(location=location, location_status=location_status)
+            notification = queue_notification(state, state["users"][actor["id"]], item["id"], "CAMPUS_WALK", "Yürüyüşüm sırasında desteğe ihtiyacım var.", location, location_status)
+            item["notification_id"] = notification["id"]
             state["idempotency"][key] = item["id"]
             return item
         return self.repo.mutate(actor["id"], "assistance.created", change)
@@ -328,8 +346,10 @@ class Service:
         def change(state):
             fresh = initial_state()
             old_revision = state["revision"]
+            settings = {key: state[key] for key in ("map_points", "emergency_contacts")}
             state.clear()
             state.update(fresh)
+            state.update(settings)
             state["revision"] = old_revision
             now = now_utc()
             for index in range(1, count + 1):
