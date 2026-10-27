@@ -17,12 +17,14 @@ from .models import (Assignment, AssistanceCreate, DemoReset, EdgeOverride, Inte
                      Login, Resolution, Review, VersionCommand, WalkStart)
 from .repository import Repository
 from .service import Service
+from .settings import load_local_environment
 
 
 def create_app(data_dir=None, allowed_origins=None, secure_cookie=None):
     root = Path(__file__).resolve().parents[2]
+    load_local_environment(root)
     folder = Path(data_dir) if data_dir is not None else root / os.getenv("KOVAN_DATA_DIR", ".local")
-    origins = set(allowed_origins or os.getenv("KOVAN_ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(","))
+    origins = {value.strip() for value in (allowed_origins or os.getenv("KOVAN_ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:5173,http://localhost:5173").split(",")) if value.strip()}
     secure = secure_cookie if secure_cookie is not None else os.getenv("KOVAN_COOKIE_SECURE", "false").lower() == "true"
     attempts = defaultdict(deque)
 

@@ -251,6 +251,17 @@ def test_websocket_snapshot_is_authorized_and_scoped(demo):
         assert "memberships" not in message["data"]
 
 
+def test_vite_origin_accepts_login_and_websocket_but_not_foreign_origin(demo):
+    client, _, _, codes = demo
+    origin = "http://127.0.0.1:5173"
+    response = client.post("/api/auth/demo-session", json={"access_code": codes["student-01"]}, headers={"origin": origin})
+    assert response.status_code == 200
+    with client.websocket_connect("/api/events", headers={"origin": origin}) as socket:
+        message = socket.receive_json()
+        assert message["data"]["user"]["id"] == "student-01"
+    assert client.post("/api/auth/demo-session", json={"access_code": codes["student-01"]}, headers={"origin": "https://foreign.example"}).status_code == 403
+
+
 def test_database_survives_restart(tmp_path):
     app = create_app(tmp_path)
     with TestClient(app) as client:

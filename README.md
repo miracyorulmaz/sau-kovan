@@ -1,4 +1,4 @@
-# Kovan — daraltılmış pilot backend
+# Kovan — daraltılmış pilot
 
 Üyelik uygunluğu kontrol edilmiş kız öğrenciler için belirlenmiş kampüs buluşma noktalarından dört kız yurduna birlikte yürüyüş ve yardım koordinasyonu prototipi.
 
@@ -24,15 +24,17 @@ Başlangıçlar: Kütüphane, Çınaraltı, kampüs girişi, kampüs market ön�
 - İsteğe bağlı sunucu varış teyidi; cevapsızsa inceleme kaydı. Saldırı sonucu çıkarılmaz.
 - SQLite kalıcılığı, varlık sürüm kontrolü, role göre filtreli WebSocket durumları ve gecikme işaretleri.
 
-Frontend Argon tarafına ayrılmıştır. Bu pakette React ekranları henüz yok; API etkileşimli dokümantasyonu `/docs` yolundadır. Gerçek GPS/sapma ölçümü, e-posta kayıt sistemi ve güvenlik entegrasyonu uygulanmadı.
+Argon'un React arayüzü `frontend/` klasöründedir; canlı API, role göre oturum ve WebSocket durumları bağlanmıştır. API etkileşimli dokümantasyonu `/docs` yolundadır. Gerçek GPS/sapma ölçümü, e-posta kayıt sistemi ve güvenlik entegrasyonu uygulanmadı.
 
 ## Kurulum
 
-Python 3.11+ gereklidir. Proje kökünde:
+Python 3.11+ ve Node.js 20.19+ gereklidir. Proje kökünde:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+npm ci --prefix frontend
+Copy-Item .env.example .env
 ```
 
 Başlatma:
@@ -41,7 +43,9 @@ Başlatma:
 .\start.ps1 -PythonPath .\.venv\Scripts\python.exe
 ```
 
-Adresler: `http://127.0.0.1:8000/api/health`, `http://127.0.0.1:8000/docs`.
+Tek komut her iki sunucuyu başlatır. Önizleme: `http://127.0.0.1:5173`; API: `http://127.0.0.1:8000/docs`. Ctrl+C iki sunucuyu da kapatır. Yalnız backend için `-BackendOnly`; farklı portlar için `-Port 8001 -FrontendPort 5174` verilebilir. Kullanımdaki portta ikinci sunucu başlatılmaz.
+
+Arayüz **Canlı Backend (/api + WS)** modunda açılır. Önce `presenter` seçip yerel demo koduyla giriş yapın ve üç öğrenciyle sahneyi sıfırlayın. Ardından `student-01` ile eşleştirin; üç öğrenci de kendi koduyla oturum açıp kendi kabulünü verir. Her rolün kodu ilk geçişte istenir; aynı sayfa açıkken daha önce giriş yapılan role tekrar geçilebilir. Sayfa yenilenince kodlar bellekten silinir.
 
 İlk başlatmada `.local/demo-access.json` içinde her demo rolü için rastgele erişim kodu oluşturulur. Bu dosya ve SQLite `.gitignore` kapsamındadır; paylaşmayın, sunum ekranına koymayın. `POST /api/auth/demo-session` gövdesine `access_code` verilince HttpOnly oturum çerezi üretilir. Yanıt ve doğrulama hataları erişim kodunu geri yazmaz. `.local` klasörü kaybolursa eski kodlar kullanılamaz; ilk kurulumdan sonra yedeğini yalnızca güvenilen yerel ortamda tutun.
 
@@ -50,6 +54,8 @@ Test ve örnek API akışı:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe scripts\smoke_demo.py
+npm test --prefix frontend
+npm run build --prefix frontend
 ```
 
 `smoke_demo.py` sentetik senaryoyu sıfırlar; diğer açık demo oturumları da bu reseti görür. Gerçek kayıtlar desteklenmediği için bu komut gerçek kullanıcı verisi üzerinde kullanılmaz.
@@ -58,7 +64,7 @@ Test ve örnek API akışı:
 
 `contracts/openapi.json` uygulanan sözleşmedir. `docs/ARGON_HANDOFF.md` endpoint sırasını ve veri etiketlerini anlatır. Daha önce yazılan mimari planlar hedef kapsamı içerir; uygulanmış endpoint'ler için bu paketteki OpenAPI geçerlidir. Özellikle genel bir `/transition`, canlı GPS veya `/api/sandbox/recalculate` endpoint'i henüz yoktur.
 
-React geliştirme sunucusunda `/api` istekleri ile `/api/events` WebSocket'ini bu backend'e proxy edin. Cookie tabanlı oturum için aynı origin düzenini koruyun. Tarayıcıdan test edilecek frontend origin'ini `KOVAN_ALLOWED_ORIGINS` listesine ekleyin. `.env.example` açıklama içindir; PowerShell ortam değişkenleri veya barındırma ortamı üzerinden değerleri verin; uygulama `.env` dosyasını kendiliğinden okumaz.
+Vite `/api` ve `/api/events` isteklerini backend'e proxy eder; cookie ve istemci Origin başlığı korunur. Varsayılan izin listesinde localhost/127.0.0.1 için 8000 ve 5173 vardır. Uygulama kökteki `.env` dosyasından yalnızca `.env.example` içindeki Kovan ayarlarını okur; süreç ortam değişkenleri önceliklidir. Başlatıcı seçilen portları alt süreçlere aktarır. Simülatör sunucudan bağımsız sunum provası içindir; canlı moddaki bir hata simülatöre düşürülmez.
 
 ## Operasyon sınırları
 
