@@ -1,0 +1,105 @@
+import hashlib
+import json
+import secrets
+import sqlite3
+import threading
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+from .catalog import DORMS
+from .errors import DomainError
+
+
+def digest(value):
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def initial_state():
+    now = datetime.now(UTC)
+    users = {}
+    for index in range(1, 61):
+        key = f"student-{index:02}"
+        users[key] = {"id": key, "display_name": f"Demo Öğrenci {index:02}", "role": "student", "is_synthetic": True,
+                      "membership": {"status": "APPROVED_PILOT", "method": "DEMO_TEST", "version": 1,
+                                     "expires_at": (now + timedelta(days=1)).isoformat(),
+                                     "verified_dorm_id": list(DORMS)[(index - 1) % 4]}}
+    users["student-pending"] = {"id": "student-pending", "display_name": "Demo Başvuru", "role": "student", "is_synthetic": True,
+                                "membership": {"status": "PENDING_REVIEW", "method": None, "version": 1, "expires_at": None, "verified_dorm_id": None}}
+    for key, role in (("reviewer", "eligibility_reviewer"), ("operator", "dispatcher"), ("guard-01", "guard"),
+                      ("guard-02", "guard"), ("presenter", "demo_admin")):
+        users[key] = {"id": key, "display_name": key, "role": role, "is_synthetic": True}
+    return {"run_id": secrets.token_hex(8), "revision": 1, "users": users, "intents": {}, "pods": {}, "walks": {},
+            "assistances": {}, "events": [], "closed_edges": [], "idempotency": {}}
+
+
+class Repository:
+    """Single-instance demo store: serialized SQLite state, durable sessions and atomic commands."""
+
+    def __init__(self, data_dir: Path):
+        self.data_dir = data_dir
+        data_dir.mkdir(parents=True, exist_ok=True)
+        self.lock = threading.RLock()
+        self.db = sqlite3.connect(data_dir / "kovan.sqlite3", check_same_thread=False)
+        self.db.execute("PRAGMA journal_mode=WAL")
+        self.db.execute("CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, actor_id TEXT NOT NULL, expires_at TEXT NOT NULL)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS access_codes (digest TEXT PRIMARY KEY, actor_id TEXT NOT NULL)")
+        row = self.db.execute("SELECT payload FROM state WHERE id=1").fetchone()
+        if not row:
+            state = initial_state()
+            self.db.execute("INSERT INTO state VALUES (1,?)", (json.dumps(state, ensure_ascii=False),))
+            codes = {user_id: secrets.token_urlsafe(24) for user_id in state["users"]}
+            self.db.executemany("INSERT INTO access_codes VALUES (?,?)", [(digest(code), user_id) for user_id, code in codes.items()])
+            (data_dir / "demo-access.json").write_text(json.dumps(codes, ensure_ascii=False, indent=2), encoding="utf-8")
+        self.db.commit()
+
+    def read(self):
+        with self.lock:
+            return json.loads(self.db.execute("SELECT payload FROM state WHERE id=1").fetchone()[0])
+
+    def mutate(self, actor_id, event_type, function):
+        with self.lock:
+            try:
+                self.db.execute("BEGIN IMMEDIATE")
+                state = json.loads(self.db.execute("SELECT payload FROM state WHERE id=1").fetchone()[0])
+                result = function(state)
+                state["revision"] += 1
+                state["events"].append({"id": secrets.token_hex(8), "actor_id": actor_id, "type": event_type,
+                                        "at": datetime.now(UTC).isoformat(), "revision": state["revision"]})
+                state["events"] = state["events"][-500:]
+                self.db.execute("UPDATE state SET payload=? WHERE id=1", (json.dumps(state, ensure_ascii=False),))
+                self.db.commit()
+                return result
+            except Exception:
+                self.db.rollback()
+                raise
+
+    def login(self, code):
+        with self.lock:
+            row = self.db.execute("SELECT actor_id FROM access_codes WHERE digest=?", (digest(code),)).fetchone()
+            if not row:
+                raise DomainError("INVALID_ACCESS_CODE", "Erişim kodu geçersiz.", 401)
+            token = secrets.token_urlsafe(32)
+            expiry = datetime.now(UTC) + timedelta(hours=8)
+            self.db.execute("DELETE FROM sessions WHERE expires_at<=?", (datetime.now(UTC).isoformat(),))
+            self.db.execute("INSERT INTO sessions VALUES (?,?,?)", (digest(token), row[0], expiry.isoformat()))
+            self.db.commit()
+            return token, self.read()["users"][row[0]]
+
+    def actor(self, token):
+        if not token:
+            raise DomainError("LOGIN_REQUIRED", "Oturum açmanız gerekiyor.", 401)
+        with self.lock:
+            row = self.db.execute("SELECT actor_id, expires_at FROM sessions WHERE digest=?", (digest(token),)).fetchone()
+            if not row or datetime.fromisoformat(row[1]) <= datetime.now(UTC):
+                raise DomainError("SESSION_EXPIRED", "Oturum geçersiz veya sona ermiş.", 401)
+            return self.read()["users"][row[0]]
+
+    def close(self):
+        with self.lock:
+            self.db.close()
+
+    def logout(self, token):
+        with self.lock:
+            self.db.execute("DELETE FROM sessions WHERE digest=?", (digest(token or ""),))
+            self.db.commit()
