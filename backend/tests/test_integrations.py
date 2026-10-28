@@ -29,7 +29,7 @@ def local_demo(tmp_path, monkeypatch):
 
 def plan(hours=0):
     start = datetime.now(UTC) + timedelta(hours=hours)
-    return {"meeting_point_id": "meet_cinaralti", "destination_dorm_id": "dorm_sabahattin_zaim", "earliest_at": start.isoformat(), "latest_at": (start + timedelta(minutes=10)).isoformat()}
+    return {"meeting_point_id": "meet_adibahce", "destination_dorm_id": "dorm_sabahattin_zaim", "earliest_at": start.isoformat(), "latest_at": (start + timedelta(minutes=10)).isoformat()}
 
 
 def contact(client):

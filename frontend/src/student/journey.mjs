@@ -1,9 +1,9 @@
 export const PILOT_CATALOG = {
   meeting_points: [
-    { id: 'meet_library', name: 'Kütüphane' },
-    { id: 'meet_cinaralti', name: 'Çınaraltı' },
+    { id: 'meet_library', name: 'SAÜ Kütüphanesi' },
+    { id: 'meet_adibahce', name: 'Kampüs Adıbahçe' },
     { id: 'meet_campus_gate', name: 'Kampüs girişi' },
-    { id: 'meet_campus_market', name: 'Kampüs market önü' },
+    { id: 'meet_final_stop', name: 'Son durak' },
   ],
   dormitories: [
     { id: 'dorm_sabahattin_zaim', name: 'Sabahattin Zaim Öğrenci Yurdu' },

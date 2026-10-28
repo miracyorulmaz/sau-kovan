@@ -31,13 +31,13 @@ import { normalizeCatalog, normalizeEdges, normalizeSnapshot, redactSensitive } 
 
 // ============================================================================
 // SABİT PİLOT KATALOĞU (Başka ID gönderilirse API 422 döner)
-// Koordinatlar bilinmiyor (null); gerçek veriyle doldurulmaz.
+// Çevrimdışı şema koordinatsızdır; canlı katalog kaynaklı harita pinlerini sağlar.
 // ============================================================================
 const MEETING_POINTS = [
-  { id: 'meet_library', label: 'Merkez Kütüphane Buluşma Noktası', coordinates: null, zone: 'pilot_origin' },
-  { id: 'meet_cinaralti', label: 'Çınaraltı Meydanı Buluşma Noktası', coordinates: null, zone: 'pilot_origin' },
-  { id: 'meet_campus_gate', label: 'Kampüs Ana Giriş Kapısı', coordinates: null, zone: 'pilot_origin' },
-  { id: 'meet_campus_market', label: 'Kampüs Market Önü', coordinates: null, zone: 'pilot_origin' },
+  { id: 'meet_library', label: 'SAÜ Kütüphanesi', coordinates: null, zone: 'pilot_origin' },
+  { id: 'meet_adibahce', label: 'Kampüs Adıbahçe', coordinates: null, zone: 'pilot_origin' },
+  { id: 'meet_campus_gate', label: 'Kampüs girişi', coordinates: null, zone: 'pilot_origin' },
+  { id: 'meet_final_stop', label: 'Son durak', coordinates: null, zone: 'pilot_origin' },
 ];
 
 const DESTINATION_DORMS = [
@@ -63,9 +63,9 @@ const DEMO_ACCOUNTS = [
 const INITIAL_SYNTHETIC_EDGES = [
   { id: 'edge_lib_plaza', from: 'meet_library', to: 'node_central_plaza', distance_m: 180, lighting_weight: 1.0, closed: false, label: 'Kütüphane – Merkez Koridor (Aydınlatma Öncelikli)' },
   { id: 'edge_lib_shortcut', from: 'meet_library', to: 'node_west_pass', distance_m: 140, lighting_weight: 2.35, closed: false, label: 'Kütüphane – Batı Kısa Geçit (Kısa / Düşük Aydınlatma Ağırlıklı)' },
-  { id: 'edge_cinar_plaza', from: 'meet_cinaralti', to: 'node_central_plaza', distance_m: 150, lighting_weight: 1.05, closed: false, label: 'Çınaraltı – Merkez Koridor' },
+  { id: 'edge_adibahce_plaza', from: 'meet_adibahce', to: 'node_central_plaza', distance_m: 150, lighting_weight: 1.05, closed: false, label: 'Kampüs Adıbahçe – Merkez Koridor' },
   { id: 'edge_gate_plaza', from: 'meet_campus_gate', to: 'node_central_plaza', distance_m: 210, lighting_weight: 1.1, closed: false, label: 'Ana Kapı – Merkez Koridor' },
-  { id: 'edge_market_plaza', from: 'meet_campus_market', to: 'node_central_plaza', distance_m: 165, lighting_weight: 1.15, closed: false, label: 'Market – Merkez Koridor' },
+  { id: 'edge_final_stop_plaza', from: 'meet_final_stop', to: 'node_central_plaza', distance_m: 165, lighting_weight: 1.15, closed: false, label: 'Son durak – Merkez Koridor' },
   { id: 'edge_plaza_east_lit', from: 'node_central_plaza', to: 'node_dorm_hub', distance_m: 260, lighting_weight: 1.0, closed: false, label: 'Merkez – Yurtlar Aydınlık Bulvarı' },
   { id: 'edge_west_shortcut', from: 'node_west_pass', to: 'node_dorm_hub', distance_m: 170, lighting_weight: 2.45, closed: false, label: 'Batı Geçit – Yurtlar Kestirmesi' },
   { id: 'edge_hub_esentepe', from: 'node_dorm_hub', to: 'dorm_esentepe', distance_m: 190, lighting_weight: 1.05, closed: false, label: 'Yurt Kavşağı – Esentepe Yurdu' },
@@ -77,9 +77,9 @@ const INITIAL_SYNTHETIC_EDGES = [
 // Soyut topoloji düğümlerinin SVG şematik pozisyonları (Coğrafi koordinat DEĞİLDİR)
 const SCHEMATIC_NODE_POSITIONS = {
   meet_library: { x: 95, y: 65, title: 'meet_library', kind: 'origin' },
-  meet_cinaralti: { x: 95, y: 145, title: 'meet_cinaralti', kind: 'origin' },
+  meet_adibahce: { x: 95, y: 145, title: 'meet_adibahce', kind: 'origin' },
   meet_campus_gate: { x: 95, y: 225, title: 'meet_campus_gate', kind: 'origin' },
-  meet_campus_market: { x: 95, y: 305, title: 'meet_campus_market', kind: 'origin' },
+  meet_final_stop: { x: 95, y: 305, title: 'meet_final_stop', kind: 'origin' },
   junction: { x: 310, y: 200, title: 'Ortak kavşak', kind: 'junction' },
   'lit-junction': { x: 535, y: 155, title: 'Aydınlatma öncelikli kavşak', kind: 'junction' },
   node_west_pass: { x: 310, y: 75, title: 'node_west_pass', kind: 'junction' },

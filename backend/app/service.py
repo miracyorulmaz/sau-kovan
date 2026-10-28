@@ -50,7 +50,8 @@ class Service:
                 "environment": "demo", "data": data}
 
     def bootstrap(self, actor):
-        return {"user": self.repo.read()["users"][actor["id"]], "catalog": catalog(), "edges": demo_edges(),
+        state = self.repo.read()
+        return {"user": state["users"][actor["id"]], "catalog": catalog(state["map_points"]), "edges": demo_edges(),
                 "notice": "Yalnızca sentetik gösterim. Gerçek öğrenci doğrulaması ve güvenlik bağlantısı yok."}
 
     def state_for(self, actor):

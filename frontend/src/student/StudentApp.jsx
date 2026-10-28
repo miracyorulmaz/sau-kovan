@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, Check, CheckCheck, ChevronDown, Clock3, Coffee,
   DoorOpen, Footprints, HeartHandshake, Hexagon, LoaderCircle, LogIn, LogOut, MapPin,
-  RefreshCw, School, ShieldCheck, ShoppingBag, UsersRound, X, CircleHelp, BellRing, Wrench } from 'lucide-react';
+  RefreshCw, School, ShieldCheck, Bus, UsersRound, X, CircleHelp, BellRing, Wrench } from 'lucide-react';
 import { useStudentJourney } from './useStudentJourney.js';
 import { HELP_STATES, localDateTime, membershipAllowed, selectJourney } from './journey.mjs';
 import { Action, Modal } from './ui.jsx';
@@ -10,9 +10,9 @@ import SafetyCenter, { NotificationStatus } from './SafetyCenter.jsx';
 import RoutePreview from './RoutePreview.jsx';
 import './student.css';
 
-const MEETING_ICONS = { meet_library: BookOpen, meet_cinaralti: Coffee, meet_campus_gate: School, meet_campus_market: ShoppingBag };
+const MEETING_ICONS = { meet_library: BookOpen, meet_adibahce: Coffee, meet_campus_gate: School, meet_final_stop: Bus };
 const atTime = (date) => new Date(date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-const placeName = (items, id) => items.find((item) => item.id === id)?.name ?? 'Seçilen nokta';
+const placeName = (items, id) => items.find((item) => item.id === id)?.name ?? ({ meet_cinaralti: 'Çınaraltı (eski nokta)', meet_campus_market: 'Kampüs market önü (eski nokta)' }[id] ?? 'Seçilen nokta');
 
 function Progress({ stage }) {
   const step = ['plan', 'waiting'].includes(stage) ? (stage === 'plan' ? 0 : 1) : stage === 'group' ? 1 : 2;

@@ -8,9 +8,9 @@
 
 Varışlar: Sabahattin Zaim, Rahime Sultan, Ayşe Hümeyra Ökten, Esentepe kız yurtları.
 
-Başlangıçlar: Kütüphane, Çınaraltı, kampüs girişi, kampüs market önü.
+Başlangıçlar: SAÜ Kütüphanesi, Kampüs Adıbahçe, Kampüs girişi (SAÜSEM), Son durak (Vib Turizm).
 
-İsimler sabit allowlist'tir. Kesin giriş koordinatları, noktaların saatleri ve yol geometrisi saha teyidi bekler. Rota örneği **SYNTHETIC_SCHEMATIC** etiketli soyut ağdır; gerçek navigasyon için kullanılamaz. Mesafeler ve aydınlatma değerleri de sentetiktir.
+Sekiz noktanın kaynaklı Google Maps pinleri hazırdır; anahtarlar ayarlandığında 16 başlangıç–yurt çifti için gerçek yürüyüş rotası ve tahmini süre alınır. [Konumlar ve kaynakları](docs/MAP_POINTS.md). Giriş kapıları, bekleme alanları ve çalışma saatleri saha teyidi bekler. Google rotası güvenlik değerlendirmesi değildir. Teknik konsoldaki **SYNTHETIC_SCHEMATIC** örneğinin mesafeleri ve aydınlatma değerleri sentetiktir.
 
 ## Çalışan parçalar
 

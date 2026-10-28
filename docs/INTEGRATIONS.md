@@ -25,7 +25,7 @@ KOVAN_GOOGLE_MAPS_API_KEY=SUNUCU_ROUTES_ANAHTARI
 KOVAN_GOOGLE_MAPS_BROWSER_KEY=KISITLANMIS_TARAYICI_ANAHTARI
 ```
 
-4. Sunucuyu yeniden başlatıp sayfayı yenileyin. **Demo kontrolü → Servis kurulumu** içinden buluşma ve yurt girişlerinin doğru koordinatlarını teyit ederek kaydedin. İsim araması otomatik fiziksel doğrulama sayılmaz; bilinmeyen koordinatlar doldurulmaz. Teyit kayıtları yerel veritabanındadır ve demo resetinde korunur.
+4. Sunucuyu yeniden başlatıp sayfayı yenileyin. Dört buluşma ve dört yurt için [kaynaklı Google Maps pinleri](MAP_POINTS.md) otomatik yüklenir. Koordinat girmek gerekmez. **Demo kontrolü → Servis kurulumu** üzerinden bir pini düzeltebilirsiniz; özel düzeltmeler açılışta ve demo resetinde korunur. Harita pini doğrulaması, fiziksel giriş veya güvenlik doğrulaması değildir.
 5. Yolculuk özetindeki **Rotayı önizle** ile Google yürüyüş rotasını ve tahmini süreyi getirin. Süre kullanıcı tarafından değiştirilebilir. Google yürüyüş tahmini trafik veya tehdit değerlendirmesi değildir.
 
 Sunucu `computeRoutes` çağrısını `travelMode=WALK` ve dar alan maskesiyle yapar. Sonuçlar süreç belleğinde en çok beş dakika tutulur; kullanıcı başına en fazla 10 yeni sorgu/dakika kabul edilir. Aynı nokta çifti için sonuç geçici olarak paylaşılır; yürüyüşte kullanılacak önizleme kimliği kullanıcıya ve noktalara bağlıdır. Beş dakika geçerse veya noktalar değişirse önizlemeyi yenileyin. Google önizlemesiyle başlayan yürüyüş, gösterilen rota sonucunun kopyasını saklar. Önizleme kullanılmazsa mevcut sentetik rota korunur.

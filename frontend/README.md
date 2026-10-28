@@ -24,7 +24,7 @@ Sunum sırası: presenter ile üç öğrencili reset; student-01 ile preview; st
 Kontrol: `npm test` ve `npm run build`. Gerçek öğrenci/kimlik doğrulaması, sürekli konum takibi ve resmî güvenlik bağlantısı yoktur. Yardım anında izinle tek seferlik cihaz konumu alınabilir. Google rota ve WhatsApp adaptörleri, gerekli anahtarlar olmadan gerçek servis çağrısı yapmaz. Yeni komutsuz demo paneli ve kurulum için `../docs/INTEGRATIONS.md` dosyasına bakın.
 
 ## Pilot kuralları
-- **Sabit Pilot Noktaları:** Yalnızca `meet_library`, `meet_cinaralti`, `meet_campus_gate`, `meet_campus_market` başlangıçları ve `dorm_sabahattin_zaim`, `dorm_rahime_sultan`, `dorm_ayse_humeyra_okten`, `dorm_esentepe` varışları kullanılır (422 koruması).
+- **Sabit Pilot Noktaları:** Yalnızca `meet_library`, `meet_adibahce`, `meet_campus_gate`, `meet_final_stop` başlangıçları ve `dorm_sabahattin_zaim`, `dorm_rahime_sultan`, `dorm_ayse_humeyra_okten`, `dorm_esentepe` varışları kullanılır (422 koruması).
 - **Sentetik Şematik Ağ (`SYNTHETIC_SCHEMATIC`):** Gerçek koordinat veya kamera verisi uydurulmamıştır; `null` alanlar olduğu gibi korunur ve soyut topoloji şeması ile `shortest` vs `lighting_first` kart karşılaştırması gösterilir.
 - **Demo Uygunluk Onayı:** Onaylı kullanıcılar için *"SAÜ tarafından doğrulandı"* ifadesi **kullanılmaz**; sözleşmedeki gibi yalnızca **"Demo uygunluk onayı (DEMO_TEST)"** etiketi gösterilir.
 - **İyimser Kilitleme (`expected_version`) ve İdempotent Yardım (`idempotency_key`):** Tüm kabul, yürüyüş başlatma/tamamlama ve görev durum geçişlerinde (`CREATED → OPERATOR_ACKED → ASSIGNED → GUARD_ACCEPTED → ARRIVED → RESOLVED`) güncel `version` gönderilir.

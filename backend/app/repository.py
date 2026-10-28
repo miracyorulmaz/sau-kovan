@@ -6,7 +6,7 @@ import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from .catalog import DORMS
+from .catalog import CATALOG_VERSION, DORMS, MEETINGS, default_map_points
 from .errors import DomainError
 
 
@@ -30,7 +30,44 @@ def initial_state():
         users[key] = {"id": key, "display_name": key, "role": role, "is_synthetic": True}
     return {"run_id": secrets.token_hex(8), "revision": 1, "users": users, "intents": {}, "pods": {}, "walks": {},
             "assistances": {}, "events": [], "closed_edges": [], "idempotency": {},
-            "emergency_contacts": {}, "emergencies": {}, "notifications": {}, "map_points": {}}
+            "emergency_contacts": {}, "emergencies": {}, "notifications": {},
+            "map_points": default_map_points(), "catalog_version": CATALOG_VERSION}
+
+
+def upgrade_catalog(state):
+    """Seed missing pins, preserve custom pins and immutable walking/history records."""
+    changed = False
+    points = state["map_points"]
+    for key, preset in default_map_points().items():
+        if key not in points:
+            points[key] = preset
+            changed = True
+        elif all(points[key].get(axis) == preset[axis] for axis in ("latitude", "longitude")):
+            for field, value in preset.items():
+                if field not in points[key]:
+                    points[key][field] = value
+                    changed = True
+    if state.get("catalog_version") != CATALOG_VERSION:
+        allowed = set(MEETINGS) | set(DORMS)
+        for key in set(points) - allowed:
+            del points[key]
+        walking_pods = {w["pod_id"] for w in state["walks"].values() if w["status"] == "WALKING"}
+        protected_intents = set()
+        for pod in state["pods"].values():
+            if pod["status"] == "WALKING" or pod["id"] in walking_pods:
+                protected_intents.update(pod["intent_ids"])
+            elif pod["meeting_point_id"] not in MEETINGS and pod["status"] in ("PROPOSED", "ACCEPTED"):
+                pod.update(status="CANCELLED", version=pod["version"] + 1, cancellation_reason="CATALOG_CHANGED")
+        for intent in state["intents"].values():
+            if intent["id"] not in protected_intents and intent["meeting_point_id"] not in MEETINGS and intent["status"] in ("WAITING", "PROPOSED"):
+                intent.update(status="CANCELLED", version=intent["version"] + 1, cancellation_reason="CATALOG_CHANGED")
+        state["catalog_version"] = CATALOG_VERSION
+        changed = True
+    if changed:
+        state["revision"] += 1
+        state["events"].append({"id": secrets.token_hex(8), "actor_id": "system", "type": "catalog.updated",
+                                "at": datetime.now(UTC).isoformat(), "revision": state["revision"]})
+    return changed
 
 
 class Repository:
@@ -59,6 +96,7 @@ class Repository:
                 if key not in state:
                     state[key] = {}
                     changed = True
+            changed = upgrade_catalog(state) or changed
             if changed:
                 self.db.execute("UPDATE state SET payload=? WHERE id=1", (json.dumps(state, ensure_ascii=False),))
         self.db.commit()

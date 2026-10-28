@@ -7,8 +7,8 @@ const user = { id: 'student-01', role: 'student', membership: { status: 'APPROVE
 const oldPod = { id: 'old', member_ids: ['student-01', 'student-02', 'student-03'], status: 'WALKING' };
 
 test('new choices and a delayed departure are preserved in the server request', () => {
-  const plan = createDeparturePlan({ meetingId: 'meet_cinaralti', dormId: 'dorm_esentepe', delay: 20 }, now);
-  assert.equal(plan.meeting_point_id, 'meet_cinaralti');
+  const plan = createDeparturePlan({ meetingId: 'meet_adibahce', dormId: 'dorm_esentepe', delay: 20 }, now);
+  assert.equal(plan.meeting_point_id, 'meet_adibahce');
   assert.equal(plan.destination_dorm_id, 'dorm_esentepe');
   assert.equal(plan.earliest_at, '2026-10-28T08:20:00.000Z');
   assert.equal(plan.latest_at, '2026-10-28T08:30:00.000Z');

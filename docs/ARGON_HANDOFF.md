@@ -6,9 +6,9 @@ Bu belge uygulanmış durumu anlatır. Önceki taslak endpoint'leri varsaymayın
 
 Başlangıç kimlikleri:
 - meet_library
-- meet_cinaralti
+- meet_adibahce
 - meet_campus_gate
-- meet_campus_market
+- meet_final_stop
 
 Varış kimlikleri:
 - dorm_sabahattin_zaim
@@ -16,7 +16,7 @@ Varış kimlikleri:
 - dorm_ayse_humeyra_okten
 - dorm_esentepe
 
-Başka başlangıç veya varış API'de 422 döner. Koordinatlar bilinmiyor; `null` alanları gerçek veriyle doldurmayın. Rota ve aydınlatma ağı sentetiktir; etiketini arayüzde koruyun. Kamera/güvenlik verisi uydurmayın.
+Başka başlangıç veya varış API'de 422 döner. Sekiz Google Maps pini kaynaklarıyla hazırdır; `/api/maps/preview` gerçek yürüyüş rotası ve süre döndürür. Ayrıntılar: [MAP_POINTS.md](MAP_POINTS.md). `entrance_coordinates: null` ve `physical_route_verified: false` fiziksel saha kontrolünün yapılmadığını belirtir. Teknik konsolun rota ve aydınlatma ağı sentetiktir; etiketini koruyun. Eski `meet_cinaralti` / `meet_campus_market` yeni planlarda kabul edilmez; başlamamış eski planlar açılışta `CATALOG_CHANGED` nedeniyle kapatılır. Aktif yürüyüş ve geçmiş rota kopyaları korunur.
 
 ## Oturum ve başlangıç
 
