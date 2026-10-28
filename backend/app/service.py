@@ -6,6 +6,7 @@ from .engines.matching import propose_groups
 from .engines.routing import demo_edges, find_route
 from .errors import DomainError
 from .repository import initial_state
+from .models import AssistanceAction
 from .safety import SafetyService, fresh_location, queue_notification
 
 
@@ -281,17 +282,19 @@ class Service:
             return item
         return self.repo.mutate(actor["id"], "assistance.created", change)
 
-    def assistance_action(self, actor, assistance_id, action, command):
+    def assistance_action(self, actor, assistance_id, action: AssistanceAction, command):
+        transitions = {"operator-ack": ("CREATED", "OPERATOR_ACKED"), "assign": ("OPERATOR_ACKED", "ASSIGNED"),
+                       "arrive": ("ASSIGNED", "ARRIVED"), "resolve": ("ARRIVED", "RESOLVED")}
+        if action not in transitions:
+            raise DomainError("INVALID_ACTION", "Bilinmeyen görev işlemi.", 422)
         require_role(actor, "dispatcher" if action in ("operator-ack", "assign", "resolve") else "guard")
         def change(state):
             item = get_item(state["assistances"], assistance_id)
             check_version(item, command.expected_version)
-            transitions = {"operator-ack": ("CREATED", "OPERATOR_ACKED"), "assign": ("OPERATOR_ACKED", "ASSIGNED"),
-                           "guard-accept": ("ASSIGNED", "GUARD_ACCEPTED"), "arrive": ("GUARD_ACCEPTED", "ARRIVED"), "resolve": ("ARRIVED", "RESOLVED")}
             old, new = transitions[action]
             if item["status"] != old:
                 raise DomainError("INVALID_TRANSITION", "İşlem mevcut durumdan yapılamaz.", 409)
-            if action in ("guard-accept", "arrive") and item["assigned_unit_id"] != actor["id"]:
+            if action == "arrive" and item["assigned_unit_id"] != actor["id"]:
                 raise DomainError("FORBIDDEN", "Yalnızca atanmış görevli işlem yapabilir.", 403)
             if action == "operator-ack":
                 item["operator_id"] = actor["id"]
@@ -303,7 +306,7 @@ class Service:
                 item["assigned_at"] = now_utc().isoformat()
             if action == "resolve":
                 item["resolution"] = command.resolution
-            item.update(status=new, version=item["version"] + 1)
+            item.update(status=new, escalation_state="NONE", version=item["version"] + 1)
             item["history"].append({"status": new, "actor_id": actor["id"], "at": now_utc().isoformat()})
             return item
         return self.repo.mutate(actor["id"], "assistance." + action, change)

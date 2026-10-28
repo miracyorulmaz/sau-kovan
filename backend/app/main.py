@@ -17,7 +17,7 @@ from .engines.routing import find_route
 from .errors import DomainError
 from .models import (Assignment, AssistanceCreate, DemoReset, EdgeOverride, IntentCreate,
                      Login, Resolution, Review, VersionCommand, WalkStart, DemoAction, DemoCompanions,
-                     EmergencyContact, EmergencyCreate, MapPoint)
+                     EmergencyContact, EmergencyCreate, MapPoint, AssistanceAction)
 from .repository import Repository
 from .service import Service, ensure_eligible, now_utc
 from .demo import DemoCoordinator
@@ -251,7 +251,7 @@ def create_app(data_dir=None, allowed_origins=None, secure_cookie=None, demo_con
         return svc.envelope(request.app.state.demo.companions(user, command.immediate))
 
     @app.post("/api/demo/assistances/{item_id}/{action}")
-    def demo_assistance_action(request: Request, item_id: str, action: str, command: DemoAction, user=Depends(local_demo_actor), svc=Depends(service)):
+    def demo_assistance_action(request: Request, item_id: str, action: AssistanceAction, command: DemoAction, user=Depends(local_demo_actor), svc=Depends(service)):
         return svc.envelope(request.app.state.demo.assistance_action(user, item_id, action, command))
 
     @app.get("/api/webhooks/whatsapp")
@@ -283,7 +283,7 @@ def create_app(data_dir=None, allowed_origins=None, secure_cookie=None, demo_con
         handler.__name__ = "assistance_" + action.replace("-", "_")
         return handler
 
-    for action, body in (("operator-ack", VersionCommand), ("assign", Assignment), ("guard-accept", VersionCommand),
+    for action, body in (("operator-ack", VersionCommand), ("assign", Assignment),
                          ("arrive", VersionCommand), ("resolve", Resolution)):
         app.post("/api/assistances/{assistance_id}/" + action)(transition_handler(action, body))
 

@@ -925,7 +925,7 @@ export default function App() {
     });
   };
 
-  // 8. Görev Durum Geçişleri: CREATED → OPERATOR_ACKED → ASSIGNED → GUARD_ACCEPTED → ARRIVED → RESOLVED
+  // 8. Görev Durum Geçişleri: CREATED → OPERATOR_ACKED → ASSIGNED → ARRIVED → RESOLVED
   const handleAssistanceStep = async (astId, stepAction) => {
     const target = assistances.find((a) => a.id === astId);
     if (!target) return;
@@ -956,20 +956,11 @@ export default function App() {
       reqBody = { expected_version: target.version, unit_id: selectedUnitId };
       nextState = 'ASSIGNED';
       nextUnit = selectedUnitId;
-    } else if (stepAction === 'guard-accept') {
+    } else if (stepAction === 'arrive') {
       if (target.state !== 'ASSIGNED') {
         return recordEnvelope('POST', endpoint, reqBody, null, {
           code: 'INVALID_STATE_TRANSITION',
-          message: 'Görevli kabulü (/guard-accept) için görevin ASSIGNED durumunda olması gerekir.',
-          details: { current_state: target.state },
-        }, 409);
-      }
-      nextState = 'GUARD_ACCEPTED';
-    } else if (stepAction === 'arrive') {
-      if (target.state !== 'GUARD_ACCEPTED') {
-        return recordEnvelope('POST', endpoint, reqBody, null, {
-          code: 'INVALID_STATE_TRANSITION',
-          message: 'Olay yerine varış (/arrive) için önce görevli kabulü (GUARD_ACCEPTED) gereklidir.',
+          message: 'Olay yerine varış (/arrive) için saha birimi sevk edilmiş (ASSIGNED) olmalıdır.',
           details: { current_state: target.state },
         }, 409);
       }
@@ -994,7 +985,7 @@ export default function App() {
         version: target.version + 1,
         assigned_unit_id: nextUnit,
         resolution: nextResolution,
-        escalation_state: nextState === 'RESOLVED' ? 'NONE' : target.escalation_state,
+        escalation_state: 'NONE',
         updated_at: new Date().toISOString(),
       };
       setAssistances((prev) => prev.map((item) => (item.id === target.id ? updated : item)));
@@ -1124,6 +1115,7 @@ export default function App() {
     if (!sessionCookieActive) return { ...account, id: 'Oturum açılmadı', badge: `${selectedAccount} kodu bekleniyor` };
     return { ...account, id: liveUser?.id ?? activeAccount, badge: liveUser?.membership?.status ?? liveUser?.role ?? account.badge };
   }, [activeAccount, selectedAccount, connectionMode, sessionCookieActive, liveUser]);
+  const isFieldOfficer = (connectionMode === 'live' ? liveUser?.role : currentAccountObj.role) === 'guard';
 
   const shortestEdgeSet = useMemo(
     () => new Set(routeExperiment?.shortest?.edge_ids || []),
@@ -1265,7 +1257,7 @@ export default function App() {
               Canlı Demo Sırası
             </span>
             <span>
-              1. <b>Presenter</b> Reset (3 öğrenci) → 2. <b>student-01</b> Preview → 3. Üyeler <b>Accept (v1..v3)</b> → 4. <b>Walk Start</b> → 5. <b>Help Request</b> → 6. <b>ACK → Assign → Guard Accept → Arrive → Resolve</b> → 7. <b>Walk Complete</b>
+              1. <b>Presenter</b> Reset (3 öğrenci) → 2. <b>student-01</b> Preview → 3. Üyeler <b>Accept (v1..v3)</b> → 4. <b>Walk Start</b> → 5. <b>Help Request</b> → 6. <b>ACK → Assign → Arrive → Resolve</b> → 7. <b>Walk Complete</b>
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1928,13 +1920,13 @@ export default function App() {
                 4. Operatör & Görevli Akışı
               </h2>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                6 Durumlu Akış
+                5 Durumlu Akış
               </span>
             </div>
 
             <div className="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-lg p-2.5 space-y-1.5">
               <div className="font-mono text-slate-300">
-                CREATED → OPERATOR_ACKED → ASSIGNED → GUARD_ACCEPTED → ARRIVED → RESOLVED
+                CREATED → OPERATOR_ACKED → ASSIGNED → ARRIVED → RESOLVED
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-slate-800">
                 <span>escalation_state:</span>
@@ -1954,7 +1946,7 @@ export default function App() {
               </p>
             </div>
 
-            <div className="flex items-center justify-between text-xs gap-2">
+            {!isFieldOfficer ? <div className="flex items-center justify-between text-xs gap-2">
               <label className="text-slate-400 font-mono text-[11px]">Atanacak Birim:</label>
               <select
                 value={selectedUnitId}
@@ -1964,7 +1956,7 @@ export default function App() {
                 <option value="guard-01">guard-01</option>
                 <option value="guard-02">guard-02</option>
               </select>
-            </div>
+            </div> : null}
 
             {assistances.length === 0 ? (
               <div className="text-xs text-slate-500 text-center py-6 border border-dashed border-slate-800 rounded-lg">
@@ -1983,7 +1975,7 @@ export default function App() {
 
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
                       <span className="px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                        {ast.state}
+                        {ast.state === 'ASSIGNED' ? 'ASSIGNED · Saha Birimi Sevk Edildi' : ast.state}
                       </span>
                       <span
                         className={`px-2 py-0.5 rounded border ${
@@ -2003,7 +1995,7 @@ export default function App() {
 
                     {/* Adım Adım Durum Makinesi Butonları */}
                     <div className="grid grid-cols-1 gap-1.5 pt-1">
-                      <button
+                      {!isFieldOfficer ? <><button
                         type="button"
                         disabled={ast.state !== 'CREATED'}
                         onClick={() => {
@@ -2027,35 +2019,22 @@ export default function App() {
                       >
                         <span>2. Operatör: /assign ({selectedUnitId})</span>
                         <span>v{ast.version}</span>
-                      </button>
+                      </button></> : null}
 
                       <button
                         type="button"
-                        disabled={ast.state !== 'ASSIGNED'}
-                        onClick={() => {
-                          if (connectionMode === 'simulator') setActiveAccount(ast.assigned_unit_id || 'guard-01');
-                          handleAssistanceStep(ast.id, 'guard-accept');
-                        }}
-                        className="w-full py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-left font-mono text-[11px] flex items-center justify-between"
-                      >
-                        <span>3. Görevli: /guard-accept</span>
-                        <span>v{ast.version}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={ast.state !== 'GUARD_ACCEPTED'}
+                        disabled={ast.state !== 'ASSIGNED' || (isFieldOfficer && ast.assigned_unit_id !== currentAccountObj.id)}
                         onClick={() => {
                           if (connectionMode === 'simulator') setActiveAccount(ast.assigned_unit_id || 'guard-01');
                           handleAssistanceStep(ast.id, 'arrive');
                         }}
                         className="w-full py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-left font-mono text-[11px] flex items-center justify-between"
                       >
-                        <span>4. Görevli: /arrive</span>
+                        <span>3. Olay Yerine Ulaşıldı (/arrive)</span>
                         <span>v{ast.version}</span>
                       </button>
 
-                      <button
+                      {!isFieldOfficer ? <button
                         type="button"
                         disabled={ast.state !== 'ARRIVED'}
                         onClick={() => {
@@ -2064,9 +2043,9 @@ export default function App() {
                         }}
                         className="w-full py-1 px-2 rounded bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 disabled:opacity-30 text-left font-mono text-[11px] text-emerald-200 flex items-center justify-between"
                       >
-                        <span>5. Operatör: /resolve (DEMO_COMPLETED)</span>
+                        <span>4. Operatör: /resolve (DEMO_COMPLETED)</span>
                         <span>v{ast.version}</span>
-                      </button>
+                      </button> : null}
                     </div>
                   </div>
                 ))}

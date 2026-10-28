@@ -8,9 +8,9 @@ import { Action, Modal } from './ui.jsx';
 
 const NEXT = {
   CREATED: ['operator-ack', 'Operatör talebi gördü'], OPERATOR_ACKED: ['assign', 'Görevli ata'],
-  ASSIGNED: ['guard-accept', 'Görevli kabul etti'], GUARD_ACCEPTED: ['arrive', 'Görevli varış bildirsin'], ARRIVED: ['resolve', 'Operatör talebi kapatsın'],
+  ASSIGNED: ['arrive', 'Olay Yerine Ulaşıldı'], ARRIVED: ['resolve', 'Operatör talebi kapatsın'],
 };
-const STAGES = ['CREATED', 'OPERATOR_ACKED', 'ASSIGNED', 'GUARD_ACCEPTED', 'ARRIVED', 'RESOLVED'];
+const STAGES = ['CREATED', 'OPERATOR_ACKED', 'ASSIGNED', 'ARRIVED', 'RESOLVED'];
 
 export default function DemoPanel({ open, onClose, api, initialTab = 'journey' }) {
   const [tab, setTab] = useState(initialTab);
@@ -65,7 +65,7 @@ export default function DemoPanel({ open, onClose, api, initialTab = 'journey' }
       {data?.assistances.length === 0 ? <p className="kv-inline-note">Henüz talep yok. Yürüyüş ekranındaki “Yardım iste” düğmesiyle bir talep oluştur.</p> : null}
       {[...(data?.assistances ?? [])].reverse().map((item) => <article key={item.id} className="kv-operation-card"><div className="kv-section-head"><strong>{HELP_STATES[item.status]?.[0] ?? item.status}</strong><span className="kv-small-tag">{item.id.slice(0, 8)}</span></div>
         <p>{item.assigned_unit_id ? `Atanan demo görevlisi: ${item.assigned_unit_id}` : 'Henüz görevli atanmamış.'}</p>
-        {item.escalation_state !== 'NONE' && item.status !== 'RESOLVED' ? <p className="kv-inline-note">Yanıt gecikmesi işaretlendi. Bu, yardımın ulaştığı anlamına gelmez.</p> : null}
+        {item.escalation_state !== 'NONE' && item.status !== 'RESOLVED' ? <p className="kv-inline-note">{item.escalation_state === 'GUARD_OVERDUE' ? 'Saha biriminin varış bildirimi gecikti.' : 'Operatör yanıtı gecikti.'} Bu, yardımın ulaştığı anlamına gelmez.</p> : null}
         <ol className="kv-operation-timeline">{STAGES.map((status) => {
           const event = item.history.find((history) => history.status === status);
           return <li key={status} className={event ? 'is-done' : ''}><span>{event ? <Check size={12} /> : '·'}</span><strong>{HELP_STATES[status][0]}</strong><small>{event ? new Date(event.at).toLocaleTimeString('tr-TR') : 'Bekliyor'}</small></li>;

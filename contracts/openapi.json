@@ -824,6 +824,12 @@
             "in": "path",
             "required": true,
             "schema": {
+              "enum": [
+                "operator-ack",
+                "assign",
+                "arrive",
+                "resolve"
+              ],
               "type": "string",
               "title": "Action"
             }
@@ -959,53 +965,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Assignment"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/assistances/{assistance_id}/guard-accept": {
-      "post": {
-        "summary": "Assistance Guard Accept",
-        "operationId": "assistance_guard_accept_api_assistances__assistance_id__guard_accept_post",
-        "parameters": [
-          {
-            "name": "assistance_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Assistance Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VersionCommand"
               }
             }
           }
@@ -1222,7 +1181,8 @@
           "unit_id": {
             "type": "string",
             "maxLength": 80,
-            "title": "Unit Id"
+            "title": "Unit Id",
+            "description": "Saha birimi bu atamayla doğrudan sevk edilir; ayrı görevli kabulü yoktur."
           }
         },
         "additionalProperties": false,

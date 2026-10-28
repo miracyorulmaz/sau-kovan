@@ -36,12 +36,12 @@ Mevcut hesaplar: student-01…student-60 (DEMO_TEST onaylı), student-pending (o
 - Tüm kabuller tamamlanınca her öğrenci POST /api/walks/start `{pod_id, arrival_check_enabled, estimated_duration_seconds}` verir. Süre 60–7200 saniye, varsayılan 900. Yerel varış ek süresi 60 saniyedir.
 - Öğrenci POST /api/assistances `{walk_id, reason: "HELP_REQUEST", idempotency_key}` ile destek ister. Aynı anahtar aynı talebi tekrar üretmez.
 - Operatör /operator-ack, ardından /assign `{expected_version, unit_id}` çağırır.
-- Atanmış görevli /guard-accept, ardından /arrive çağırır.
+- Operatör /assign çağrısıyla saha birimini doğrudan sevk eder (ASSIGNED). Atanmış görevli yalnızca /arrive ile varış bildirir; kabul adımı yoktur.
 - Operatör /resolve `{expected_version, resolution: "DEMO_COMPLETED"}` çağırır.
 - Öğrenci /api/walks/{id}/complete `{expected_version}` ile varışını teyit eder.
 
-Görev durumları: CREATED → OPERATOR_ACKED → ASSIGNED → GUARD_ACCEPTED → ARRIVED → RESOLVED.
-Gecikme: escalation_state = NONE / OPERATOR_OVERDUE / GUARD_OVERDUE. Bu alan yardım ulaştığı anlamına gelmez.
+Görev durumları: CREATED → OPERATOR_ACKED → ASSIGNED → ARRIVED → RESOLVED.
+Gecikme: escalation_state = NONE / OPERATOR_OVERDUE / GUARD_OVERDUE. GUARD_OVERDUE sevkten sonra varış bildiriminin gecikmesidir; görev kabulü beklenmez. Bu alan yardım ulaştığı anlamına gelmez. Geç varış bildirilebilir; başarılı geçişte güncel gecikme işareti temizlenir. Eski altı durumlu sürümde kabul edilmiş açık kayıtlar, geçmişleri korunarak ASSIGNED durumuna taşınır.
 
 ## Yeni öğrenci başvurusu gösterimi
 

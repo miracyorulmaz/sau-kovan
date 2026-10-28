@@ -85,7 +85,7 @@ class DemoCoordinator:
             raise DomainError("FORBIDDEN", "Bu demo kontrolü yalnızca kendi talebin içindir.", 403)
         if action in ("operator-ack", "assign", "resolve"):
             agent = state["users"]["operator"]
-        elif action in ("guard-accept", "arrive"):
+        elif action == "arrive":
             agent = state["users"].get(item["assigned_unit_id"])
             if not agent:
                 raise DomainError("UNIT_UNAVAILABLE", "Önce bir demo görevlisi ata.", 409)

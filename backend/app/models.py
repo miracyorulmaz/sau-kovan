@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
+AssistanceAction = Literal["operator-ack", "assign", "arrive", "resolve"]
+
 
 class RequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -93,7 +95,7 @@ class MapPoint(RequestModel):
 
 
 class Assignment(VersionCommand):
-    unit_id: str = Field(max_length=80)
+    unit_id: str = Field(max_length=80, description="Saha birimi bu atamayla doğrudan sevk edilir; ayrı görevli kabulü yoktur.")
 
 
 class Resolution(VersionCommand):

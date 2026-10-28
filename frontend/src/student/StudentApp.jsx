@@ -127,7 +127,7 @@ function HelpStatus({ assistance }) {
   const overdue = ['OPERATOR_OVERDUE', 'GUARD_OVERDUE'].includes(assistance.escalation_state) && assistance.status !== 'RESOLVED';
   return <div className={`kv-help-status ${assistance.status === 'RESOLVED' ? 'is-resolved' : ''}`} role="status">
     <HeartHandshake size={22} /><div><strong>{title}</strong><p>{description}</p>
-      {overdue ? <p className="kv-overdue">Yanıt gecikti. Talebin açık; yardımın ulaştığı henüz doğrulanmadı.</p> : null}</div>
+      {overdue ? <p className="kv-overdue">{assistance.escalation_state === 'GUARD_OVERDUE' ? 'Saha biriminin varış bildirimi gecikti.' : 'Operatör yanıtı gecikti.'} Talebin açık; yardımın ulaştığı henüz doğrulanmadı.</p> : null}</div>
   </div>;
 }
 

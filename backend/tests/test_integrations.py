@@ -104,7 +104,7 @@ def test_demo_operator_actions_keep_student_session_and_use_real_transitions(loc
     walk = client.post("/api/walks/start", json={"pod_id": pod["id"]}).json()["data"]
     item = client.post("/api/assistances", json={"walk_id": walk["id"], "idempotency_key": "demo-help-001"}).json()["data"]
     assert client.post(f"/api/demo/assistances/{item['id']}/arrive", json={"expected_version": 1}).status_code == 409
-    for action in ("operator-ack", "assign", "guard-accept", "arrive", "resolve"):
+    for action in ("operator-ack", "assign", "arrive", "resolve"):
         response = client.post(f"/api/demo/assistances/{item['id']}/{action}", json={"expected_version": item["version"], "unit_id": "guard-01"})
         assert response.status_code == 200
         item = response.json()["data"]

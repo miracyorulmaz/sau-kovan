@@ -70,6 +70,23 @@ def upgrade_catalog(state):
     return changed
 
 
+def upgrade_assistance_flow(state):
+    """Normalize formerly accepted tasks to dispatched, preserving their audit history."""
+    changed = False
+    at = datetime.now(UTC).isoformat()
+    for item in state["assistances"].values():
+        if item["status"] == "GUARD_ACCEPTED":
+            item.update(status="ASSIGNED", version=item["version"] + 1)
+            item.setdefault("assigned_at", item["created_at"])
+            item["history"].append({"status": "ASSIGNED", "actor_id": "system", "at": at, "reason": "WORKFLOW_UPDATED"})
+            changed = True
+    if changed:
+        state["revision"] += 1
+        state["events"].append({"id": secrets.token_hex(8), "actor_id": "system", "type": "assistance.workflow_updated",
+                                "at": at, "revision": state["revision"]})
+    return changed
+
+
 class Repository:
     """Single-instance demo store: serialized SQLite state, durable sessions and atomic commands."""
 
@@ -97,6 +114,7 @@ class Repository:
                     state[key] = {}
                     changed = True
             changed = upgrade_catalog(state) or changed
+            changed = upgrade_assistance_flow(state) or changed
             if changed:
                 self.db.execute("UPDATE state SET payload=? WHERE id=1", (json.dumps(state, ensure_ascii=False),))
         self.db.commit()

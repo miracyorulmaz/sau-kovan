@@ -19,7 +19,7 @@ Sekiz noktanın kaynaklı Google Maps pinleri hazırdır; anahtarlar ayarlandı�
 - Başlangıç/varış allowlist'inin sunucuda kontrolü.
 - Ortak zaman aralığına sahip 3–5 kişilik deterministik grup önerisi; her üyenin kabulü veya reddi.
 - Şematik ağda en kısa/aydınlatma öncelikli rota, bağlantı kapatma ve yeniden hesaplama.
-- CREATED → OPERATOR_ACKED → ASSIGNED → GUARD_ACCEPTED → ARRIVED → RESOLVED görev akışı.
+- CREATED → OPERATOR_ACKED → ASSIGNED → ARRIVED → RESOLVED görev akışı. Operatör ataması saha birimini doğrudan sevk eder; görevli yalnızca varış bildirir.
 - Tekrar yardım isteğine karşı idempotency; aynı görevliye eşzamanlı iki aktif iş atamasını engelleme.
 - İsteğe bağlı sunucu varış teyidi; cevapsızsa inceleme kaydı. Saldırı sonucu çıkarılmaz.
 - SQLite kalıcılığı, varlık sürüm kontrolü, role göre filtreli WebSocket durumları ve gecikme işaretleri.
@@ -80,7 +80,7 @@ Vite `/api` ve `/api/events` isteklerini backend'e proxy eder; cookie ve istemci
 
 - Tek backend süreci; `--workers 1`. WebSocket istemcileri 500 ms aralıkla revizyon değişimini kontrol eder. Büyük ölçek iddiası yok.
 - Demo yöneticisi reset ve bağlantı değişiklikleri yapabilir; öğrenci/inceleyici/görevli yapamaz.
-- Yardım, yalnızca görevli kabul ettiğinde GUARD_ACCEPTED olur. Resmî bildirim/SMS/112 gönderilmez.
+- Operatör `/assign` ile saha birimini doğrudan sevk eder (`ASSIGNED`). Atanan görevli `/arrive` ile olay yerine ulaştığını bildirir; ayrı kabul adımı yoktur. Resmî bildirim/SMS/112 gönderilmez.
 - Süresi dolan, başlamamış grup EXPIRED olur. Eşleştirme açgözlüdür; küresel optimum iddiası yok. Grubun her üyesi kendi yürüyüşünü başlatır ve tamamlar.
 - Erişim kodları, gerçek hesap doğrulama sisteminin yerine geçmez. Tüm kullanıcılar sentetiktir; kendi beyanını onaylı üyeliğe dönüştüren kayıt endpoint'i yoktur.
 - E-posta, kimlik veya fotoğraftan cinsiyet tahmini yapılmaz. Kız yurdu kaydıyla manuel uygunluk kontrolü yalnızca önerilmiş operasyon yöntemidir.

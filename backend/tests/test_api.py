@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.models import Assignment, AssistanceCreate, VersionCommand
 from app.errors import DomainError
+from app.repository import Repository
+from app.service import Service
 from conftest import prepare_walk
 
 
@@ -129,6 +131,8 @@ def test_assistance_lifecycle_separates_operator_and_guard(demo):
     client, _, login, _ = demo
     walk = prepare_walk(demo)
     item = help_request(client, walk)
+    login("guard-01")
+    assert client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": item["version"]}).status_code == 409
     login("operator")
     assert client.post(f"/api/assistances/{item['id']}/assign", json={"expected_version": 1, "unit_id": "guard-01"}).status_code == 409
     for action, extra, expected_state in (("operator-ack", {}, "OPERATOR_ACKED"), ("assign", {"unit_id": "guard-01"}, "ASSIGNED")):
@@ -136,17 +140,23 @@ def test_assistance_lifecycle_separates_operator_and_guard(demo):
         assert response.status_code == 200
         item = response.json()["data"]
         assert item["status"] == expected_state
+    assert client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": item["version"]}).status_code == 403
     login("guard-02")
-    assert client.post(f"/api/assistances/{item['id']}/guard-accept", json={"expected_version": item["version"]}).status_code == 403
+    assert client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": item["version"]}).status_code == 403
     login("guard-01")
-    for action, target in (("guard-accept", "GUARD_ACCEPTED"), ("arrive", "ARRIVED")):
-        response = client.post(f"/api/assistances/{item['id']}/{action}", json={"expected_version": item["version"]})
-        assert response.status_code == 200
-        item = response.json()["data"]
-        assert item["status"] == target
+    visible = client.get("/api/state").json()["data"]["assistances"]
+    assert len(visible) == 1 and visible[0]["status"] == "ASSIGNED"
+    assert client.post(f"/api/assistances/{item['id']}/guard-accept", json={"expected_version": item["version"]}).status_code == 404
+    assert client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": item["version"] - 1}).status_code == 409
+    response = client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": item["version"]})
+    assert response.status_code == 200
+    item = response.json()["data"]
+    assert item["status"] == "ARRIVED"
+    assert client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": item["version"]}).status_code == 409
     login("operator")
     response = client.post(f"/api/assistances/{item['id']}/resolve", json={"expected_version": item["version"], "resolution": "DEMO_COMPLETED"})
     assert response.json()["data"]["status"] == "RESOLVED"
+    assert [event["status"] for event in response.json()["data"]["history"]] == ["CREATED", "OPERATOR_ACKED", "ASSIGNED", "ARRIVED", "RESOLVED"]
 
 
 def test_help_idempotency_and_entity_conflict(demo):
@@ -319,7 +329,7 @@ def test_expired_unstarted_pod_releases_members_for_new_intents(demo):
     assert client.post("/api/intents", json=window()).status_code == 201
 
 
-def test_guard_overdue_does_not_imply_acceptance(demo):
+def test_guard_overdue_waits_for_arrival_and_allows_late_arrival(demo):
     client, app, login, _ = demo
     walk = prepare_walk(demo)
     item = help_request(client, walk)
@@ -330,16 +340,42 @@ def test_guard_overdue_does_not_imply_acceptance(demo):
     current = app.state.repo.read()["assistances"][item["id"]]
     assert current["status"] == "ASSIGNED" and current["escalation_state"] == "GUARD_OVERDUE"
     login("guard-01")
-    response = client.post(f"/api/assistances/{item['id']}/guard-accept", json={"expected_version": current["version"]})
+    response = client.post(f"/api/assistances/{item['id']}/arrive", json={"expected_version": current["version"]})
     assert response.status_code == 200
+    assert response.json()["data"]["status"] == "ARRIVED"
+    assert response.json()["data"]["escalation_state"] == "NONE"
 
 
 def test_openapi_has_distinct_role_commands(demo):
     client, *_ = demo
     paths = client.get("/openapi.json").json()["paths"]
     assert "/api/assistances/{assistance_id}/operator-ack" in paths
-    assert "/api/assistances/{assistance_id}/guard-accept" in paths
+    assert "/api/assistances/{assistance_id}/guard-accept" not in paths
+    assert "/api/assistances/{assistance_id}/arrive" in paths
     assert "/api/incidents/{id}/transition" not in paths
+    demo_action = next(p for p in paths["/api/demo/assistances/{item_id}/{action}"]["post"]["parameters"] if p["name"] == "action")
+    assert set(demo_action["schema"]["enum"]) == {"operator-ack", "assign", "arrive", "resolve"}
+
+
+def test_existing_accepted_task_upgrades_to_assigned_and_can_arrive(tmp_path):
+    repo = Repository(tmp_path)
+    at = datetime.now(UTC).isoformat()
+    legacy = {"id": "old-task", "status": "GUARD_ACCEPTED", "version": 4, "assigned_unit_id": "guard-01",
+              "assigned_at": at, "created_at": at, "escalation_state": "NONE", "history": [{"status": "GUARD_ACCEPTED", "at": at}]}
+    repo.mutate("test", "legacy", lambda state: state["assistances"].update({legacy["id"]: legacy}))
+    repo.close()
+    upgraded = Repository(tmp_path)
+    current = upgraded.read()["assistances"][legacy["id"]]
+    assert current["status"] == "ASSIGNED" and current["version"] == 5
+    assert current["history"][0] == legacy["history"][0]
+    assert current["assigned_at"] == at and current["assigned_unit_id"] == "guard-01"
+    upgraded.close()
+    reopened = Repository(tmp_path)
+    assert reopened.read()["assistances"][legacy["id"]] == current
+    guard = reopened.read()["users"]["guard-01"]
+    arrived = Service(reopened).assistance_action(guard, legacy["id"], "arrive", VersionCommand(expected_version=5))
+    assert arrived["status"] == "ARRIVED"
+    reopened.close()
 
 
 def test_invalid_login_body_does_not_echo_secret(demo):

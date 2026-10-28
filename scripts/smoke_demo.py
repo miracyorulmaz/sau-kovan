@@ -6,9 +6,10 @@ from pathlib import Path
 import httpx
 
 
-def run(base_url):
+def run(base_url, data_dir=None):
     root = Path(__file__).resolve().parents[1]
-    codes = json.loads((root / ".local" / "demo-access.json").read_text(encoding="utf-8"))
+    folder = Path(data_dir) if data_dir else root / ".local"
+    codes = json.loads((folder / "demo-access.json").read_text(encoding="utf-8"))
     clients = {}
     try:
         def client_for(user_id):
@@ -33,13 +34,16 @@ def run(base_url):
         print("2. Grup üç ayrı oturumdan kabul edildi.")
         walk = post("student-01", "/api/walks/start", {"pod_id": pod["id"]})
         item = post("student-01", "/api/assistances", {"walk_id": walk["id"], "reason": "HELP_REQUEST", "idempotency_key": "smoke-demo-request"})
-        for user_id, action, fields in (
-            ("operator", "operator-ack", {}), ("operator", "assign", {"unit_id": "guard-01"}),
-            ("guard-01", "guard-accept", {}), ("guard-01", "arrive", {}),
-            ("operator", "resolve", {"resolution": "DEMO_COMPLETED"}),
+        for user_id, action, fields, expected_status in (
+            ("operator", "operator-ack", {}, "OPERATOR_ACKED"),
+            ("operator", "assign", {"unit_id": "guard-01"}, "ASSIGNED"),
+            ("guard-01", "arrive", {}, "ARRIVED"),
+            ("operator", "resolve", {"resolution": "DEMO_COMPLETED"}, "RESOLVED"),
         ):
             item = post(user_id, f"/api/assistances/{item['id']}/{action}", {"expected_version": item["version"], **fields})
+            assert item["status"] == expected_status
             print(f"3. Görev durumu: {item['status']}")
+        assert [event["status"] for event in item["history"]] == ["CREATED", "OPERATOR_ACKED", "ASSIGNED", "ARRIVED", "RESOLVED"]
         post("student-01", f"/api/walks/{walk['id']}/complete", {"expected_version": walk["version"]})
         print("4. Yürüyüş tamamlandı. Gerçek HTTP akışı başarılı; güvenlik hizmeti çağrılmadı.")
     finally:
@@ -50,7 +54,8 @@ def run(base_url):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--data-dir", type=Path, help="Ayrı test sunucusunun demo erişim kodu klasörü")
     arguments = parser.parse_args()
     if not arguments.base_url.startswith(("http://127.0.0.1:", "http://localhost:")):
         parser.error("Bu gösterim yalnızca localhost içindir.")
-    run(arguments.base_url)
+    run(arguments.base_url, arguments.data_dir)

@@ -94,10 +94,9 @@ export function friendlyError(error) {
 }
 
 export const HELP_STATES = {
-  CREATED: ['Talebin alındı', 'Demo operatörünün talebini görmesi bekleniyor. Henüz görevli kabulü yok.'],
+  CREATED: ['Talebin alındı', 'Demo operatörünün talebini görmesi bekleniyor. Henüz saha birimi sevk edilmedi.'],
   OPERATOR_ACKED: ['Operatör talebini gördü', 'Demo operatörü talebini değerlendiriyor. Henüz görevli atanmadı.'],
-  ASSIGNED: ['Görevli atandı', 'Atanan demo görevlisinin kabulü bekleniyor.'],
-  GUARD_ACCEPTED: ['Görevli talebini kabul etti', 'Demo görevlisi henüz varış bildirmedi.'],
+  ASSIGNED: ['Saha Birimi Sevk Edildi', 'Atanan demo saha biriminin olay yerine varış bildirimi bekleniyor.'],
   ARRIVED: ['Görevli varış bildirdi', 'Bu, görevlinin demo ekranında verdiği varış bildirimidir.'],
   RESOLVED: ['Destek talebin kapatıldı', 'Demo operatörü destek sürecini tamamladı.'],
 };
