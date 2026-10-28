@@ -68,7 +68,7 @@ function RouteSummary({ catalog, meetingId, dormId, compact = false }) {
 function MemberList({ pod, userId }) {
   return <ul className="kv-members" aria-label="Grup arkadaşların">{pod.member_ids.map((id, index) => {
     const accepted = pod.accepted_member_ids.includes(id);
-    const name = id === userId ? 'Sen' : `Yol arkadaşı ${index + 1}`;
+    const name = id === userId ? 'Sen' : pod.members?.find((member) => member.id === id)?.masked_name ?? 'Öğrenci';
     return <li key={id}><span className={`kv-avatar kv-avatar-${index % 4}`} aria-hidden="true">{id === userId ? 'S' : index + 1}</span>
       <span><strong>{name}</strong><small>{id === userId ? 'Senin katılımın' : 'Aynı noktadan, aynı yurda'}</small></span>
       <span className={`kv-member-state ${accepted ? 'is-accepted' : ''}`}>{accepted ? <><Check size={14} /> Katılıyor</> : 'Onay bekleniyor'}</span>
@@ -267,7 +267,7 @@ export default function StudentApp() {
       <div className="kv-how-strip"><span><MapPin size={19} /><strong>Bir noktada buluş</strong></span><ArrowRight size={16} /><span><UsersRound size={19} /><strong>Grubuna katıl</strong></span><ArrowRight size={16} /><span><Footprints size={19} /><strong>Yolu birlikte paylaş</strong></span></div>
     </main>
     <footer className="kv-footer"><div><span className="kv-footer-logo"><Hexagon size={16} /> Kovan</span><p>Üyelikler pilot demoya aittir. Harita ve WhatsApp, servis ayarlarına bağlıdır. Sürekli konum takibi veya resmî güvenlik bağlantısı yoktur.</p></div>
-      <a href="/demo">Demo yönetimi<ArrowUpRight size={13} /></a></footer>
+      <nav aria-label="Diğer Kovan ekranları"><a href="/operator">Operatör<ArrowUpRight size={13} /></a><a href="/guard">Saha görevlisi<ArrowUpRight size={13} /></a><a href="/demo">Demo yönetimi<ArrowUpRight size={13} /></a></nav></footer>
     {user && api.capabilities.local_demo_controls ? <DemoPanel open={demoOpen} onClose={() => setDemoOpen(false)} api={api} initialTab={demoTab} /> : null}
     <Modal id="login" open={loginOpen} onClose={closeLogin} title="Kovan’a hoş geldin">
       <p className="kv-modal-copy">Yolculuğunu planlamak için öğrenci erişim kodunla giriş yap.</p>

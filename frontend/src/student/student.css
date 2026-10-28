@@ -1,3 +1,4 @@
+.kv-footer nav { display: flex; align-items: center; flex-wrap: wrap; gap: 22px; }
 .kv-app {
   --kv-bg: #f5f7fa;
   --kv-paper: #fff;
@@ -8,7 +9,11 @@
   --kv-amber-dark: #96640b;
   --kv-amber-soft: #fff7e3;
   --kv-green: #247354;
+  --kv-green-soft: #eaf4ee;
   --kv-red: #b53737;
+  --kv-red-soft: #fff0ed;
+  --kv-blue: #315d85;
+  --kv-blue-soft: #edf4fc;
   min-height: 100vh;
   background: var(--kv-bg);
   color: var(--kv-ink);

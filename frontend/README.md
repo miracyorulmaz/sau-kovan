@@ -17,6 +17,10 @@ React + Vite uygulamasıdır. `/` sade öğrenci ekranı; `/demo` ayrı yüklene
 
 Varsayılan öğrenci önizlemesi: http://127.0.0.1:5173. Seçilen buluşma noktası, yurt ve çıkış saati `POST /api/intents` ile kaydedilir; grup önerisi bundan sonra istenir. Her öğrenci yalnız kendi kabulünü ve yürüyüşünü işler. Giriş kodu saklanmaz, sayfa yenilemede mevcut çerezle plan geri yüklenir. `src/student/` API erişimi, durum seçimi, bağlantı yönetimi ve ekranları ayırır.
 
+`/operator` ve `/guard`, öğrenci tasarımıyla aynı renkleri ve native kontrolleri kullanan sade personel ekranlarıdır. `src/operations/` rol oturumu, canlı durum, talep kuyruğu ve ayrıntı ekranını içerir. Her duruma bir ana aksiyon düşer; saha görevlisinde yalnız varış bildirimi vardır. Tek saha görevi doğrudan ayrıntı ekranında açılır; telefonda varış düğmesi üstte tutulur. Kodlar saklanmaz, API sürüm kontrolü ve sunucu yetkileri korunur.
+
+Öğrenci grupları backend'in `pod.members[].masked_name` alanını gösterir; tarayıcıya tam akran adları getirilmez. HTTP ve WebSocket aynı maskeleme mantığını kullanır. Bağlantı kesildiğinde görünür sayfa aralıklarla yenilenir; eski sürümle işlem sunucuda reddedilip güncel durum alınır.
+
 Teknik konsol: http://127.0.0.1:5173/demo. **Canlı Backend (/api + WS)** modunda açılır. Katalog ve kenarlar bootstrap'tan okunur; WebSocket durumları ekrana uygulanır. Bağlantı kesilirse yeniden bağlanma ve REST yedeği devreye girer. Canlı işlem hatası yerel başarıya çevrilmez. Aynı tarayıcıdaki sekmeler çerezi paylaşır; eşzamanlı farklı roller için ayrı tarayıcı profilleri kullanın.
 
 Sunum sırası: presenter ile üç öğrencili reset; student-01 ile preview; student-01/02/03 ile ayrı ayrı kabul; student-01 ile yürüyüş ve yardım; operator ile ACK/sevk; guard-01 ile yalnızca “Olay Yerine Ulaşıldı” (/arrive); operator ile kapatma; öğrenci ile yürüyüş tamamlama.

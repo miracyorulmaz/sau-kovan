@@ -33,6 +33,7 @@ Mevcut hesaplar: student-01…student-60 (DEMO_TEST onaylı), student-pending (o
 - Presenter hesabında POST /api/demo/reset `{student_count: 3}`. Bu, üç sentetik çıkış niyeti kurar; bir reset tüm sentetik sahneyi yeniler.
 - student-01 hesabında POST /api/matches/preview. Sonuçta `data.pod`, `member_ids`, `version`, `accepted_member_ids` bulunur. Uygun grup yoksa pod null ve gerekçe döner.
 - Her üye kendi hesabıyla POST /api/pods/{id}/accept `{expected_version}`. Her kabulden sonra güncel version kullanılmalı. Reddetme /decline ile yapılır.
+- Öğrencinin pod yanıtlarında `members: [{id, masked_name}]` bulunur. Adlar sunucuda ilk harf + yıldızlar biçiminde üretilir; tam akran adları gönderilmez. Bu alan `/api/state`, `/api/matches/preview`, kabul/red ve WebSocket yanıtlarında aynıdır. `member_ids` ve `accepted_member_ids` mevcut görevlerini korur. Grup dışındaki öğrencilere üyeler açılmaz.
 - Tüm kabuller tamamlanınca her öğrenci POST /api/walks/start `{pod_id, arrival_check_enabled, estimated_duration_seconds}` verir. Süre 60–7200 saniye, varsayılan 900. Yerel varış ek süresi 60 saniyedir.
 - Öğrenci POST /api/assistances `{walk_id, reason: "HELP_REQUEST", idempotency_key}` ile destek ister. Aynı anahtar aynı talebi tekrar üretmez.
 - Operatör /operator-ack, ardından /assign `{expected_version, unit_id}` çağırır.
@@ -42,6 +43,8 @@ Mevcut hesaplar: student-01…student-60 (DEMO_TEST onaylı), student-pending (o
 
 Görev durumları: CREATED → OPERATOR_ACKED → ASSIGNED → ARRIVED → RESOLVED.
 Gecikme: escalation_state = NONE / OPERATOR_OVERDUE / GUARD_OVERDUE. GUARD_OVERDUE sevkten sonra varış bildiriminin gecikmesidir; görev kabulü beklenmez. Bu alan yardım ulaştığı anlamına gelmez. Geç varış bildirilebilir; başarılı geçişte güncel gecikme işareti temizlenir. Eski altı durumlu sürümde kabul edilmiş açık kayıtlar, geçmişleri korunarak ASSIGNED durumuna taşınır.
+
+Sade ekranlar `/operator` ve `/guard` yollarındadır. Mevcut `/api/bootstrap`, `/api/state`, rol filtreli WebSocket ve görev komutlarını kullanır. Personel durum yanıtlarındaki yardım kayıtları `student_name` alanında sansürlü öğrenci adını taşır. Guard yalnız atanmış görevleri ve bunların yürüyüş bağlamını alır; dispatcher birim uygunluğunu da alır. Ekranlar rol uyuşmazlığında görevleri göstermez. Tarayıcıda görünen role ek olarak sunucunun yetki kontrolleri geçerlidir.
 
 ## Yeni öğrenci başvurusu gösterimi
 

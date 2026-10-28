@@ -39,6 +39,8 @@ Generated from project sources at 2026-10-27T22:31:55.394Z.
 
 - The student opens `/`: plan a meeting and dorm, join a group, walk and request support.
 - `/demo` retains the existing technical console and simulator, loaded separately.
+- `/operator` and `/guard` extend the same student design tokens and native controls. A request queue leads to a focused detail panel; one field task opens directly with arrival near the top on mobile.
+- Peer labels are masked on the server. Role-specific staff screens never imply that the synthetic pilot is connected to real security staff.
 - Preserve Kovan amber; pair it with light slate, ink text and muted green confirmation states.
 - Use Trebuchet MS headings and Segoe UI body text with local font fallbacks.
 - A shared-path illustration shows people coming together; it is explicitly not geographic navigation.

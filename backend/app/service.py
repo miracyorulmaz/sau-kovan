@@ -7,6 +7,7 @@ from .engines.routing import demo_edges, find_route
 from .errors import DomainError
 from .repository import initial_state
 from .models import AssistanceAction
+from .privacy import masked_name
 from .safety import SafetyService, fresh_location, queue_notification
 
 
@@ -68,7 +69,7 @@ class Service:
             result["assistances"] = [item for item in state["assistances"].values() if item["walk_id"] in own_walks]
             for pod in state["pods"].values():
                 if uid in pod["member_ids"]:
-                    result["pods"].append(self.public_pod(pod, uid))
+                    result["pods"].append(self.public_pod(pod, uid, state["users"]))
         elif role == "eligibility_reviewer":
             result["memberships"] = [{"user_id": u["id"], "display_name": u["display_name"], "is_synthetic": True,
                                       "membership": u["membership"]} for u in state["users"].values() if u["role"] == "student"]
@@ -81,12 +82,18 @@ class Service:
                 result[key] = list(state[key].values())
             result["units"] = self.units(state)
             result["events"] = state["events"][-30:]
+        if role in ("guard", "dispatcher", "demo_admin"):
+            result["assistances"] = [dict(item, student_name=masked_name(state["users"].get(
+                state["walks"][item["walk_id"]]["owner_id"], {}).get("display_name"))) for item in result["assistances"]]
         return result
 
     @staticmethod
-    def public_pod(pod, uid):
+    def public_pod(pod, uid, users):
         # A member gets only the shared meeting plan, not other members' private intents or homes.
-        return {key: value for key, value in pod.items() if key != "intent_ids"} | {"you_accepted": uid in pod["accepted_member_ids"]}
+        return {key: value for key, value in pod.items() if key != "intent_ids"} | {
+            "you_accepted": uid in pod["accepted_member_ids"],
+            "members": [{"id": member_id, "masked_name": masked_name(users.get(member_id, {}).get("display_name"))}
+                        for member_id in pod["member_ids"]]}
 
     @staticmethod
     def units(state):
@@ -155,7 +162,7 @@ class Service:
                 if (actor["id"] in pod["member_ids"] and pod["status"] in ("PROPOSED", "ACCEPTED", "WALKING")
                         and pod["id"] not in completed_pods
                         and (datetime.fromisoformat(pod["latest_departure_at"]) >= now_utc() or pod["id"] in walking_pods)):
-                    return {"pod": self.public_pod(pod, actor["id"]), "unmatched": []}
+                    return {"pod": self.public_pod(pod, actor["id"], state["users"]), "unmatched": []}
             eligible = []
             for intent in state["intents"].values():
                 if intent["status"] == "WAITING":
@@ -172,7 +179,7 @@ class Service:
                     state["pods"][pod["id"]] = pod
                     for intent_id in pod["intent_ids"]:
                         state["intents"][intent_id].update(status="PROPOSED", version=state["intents"][intent_id]["version"] + 1)
-                    return {"pod": self.public_pod(pod, actor["id"]), "unmatched": [], "algorithm": result["algorithm"]}
+                    return {"pod": self.public_pod(pod, actor["id"], state["users"]), "unmatched": [], "algorithm": result["algorithm"]}
             own_ids = {item["id"] for item in state["intents"].values() if item["owner_id"] == actor["id"]}
             return {"pod": None, "unmatched": [item for item in result["unmatched"] if item["intent_id"] in own_ids]}
         return self.repo.mutate(actor["id"], "pod.proposed", change)
@@ -197,7 +204,7 @@ class Service:
                 if set(pod["accepted_member_ids"]) == set(pod["member_ids"]):
                     pod["status"] = "ACCEPTED"
             pod["version"] += 1
-            return self.public_pod(pod, actor["id"])
+            return self.public_pod(pod, actor["id"], state["users"])
         return self.repo.mutate(actor["id"], "pod.accepted" if accept else "pod.declined", change)
 
     def start_walk(self, actor, command, route_override=None):

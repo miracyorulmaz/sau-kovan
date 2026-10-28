@@ -24,7 +24,7 @@ Sekiz noktanın kaynaklı Google Maps pinleri hazırdır; anahtarlar ayarlandı�
 - İsteğe bağlı sunucu varış teyidi; cevapsızsa inceleme kaydı. Saldırı sonucu çıkarılmaz.
 - SQLite kalıcılığı, varlık sürüm kontrolü, role göre filtreli WebSocket durumları ve gecikme işaretleri.
 
-React arayüzü `frontend/` klasöründedir. `/` öğrencinin sade planlama, grup kabulü, yürüyüş ve yardım ekranıdır; `/demo` Argon'un teknik operasyon konsoludur. Canlı API, role göre oturum ve WebSocket durumları bağlanmıştır. API etkileşimli dokümantasyonu `/docs` yolundadır. Sürekli GPS takibi/sapma ölçümü, e-posta kayıt sistemi ve resmî güvenlik entegrasyonu uygulanmadı.
+React arayüzü `frontend/` klasöründedir. `/` öğrencinin sade planlama, grup kabulü, yürüyüş ve yardım ekranıdır. `/operator` operatörün talebi inceleyip uygun birimi sevk ettiği, `/guard` saha görevlisinin yalnızca kendisine atanan görevleri görüp varış bildirdiği sade ekranlardır. `/demo` teknik operasyon konsoludur. Canlı API, role göre oturum ve WebSocket durumları bağlanmıştır. API etkileşimli dokümantasyonu `/docs` yolundadır. Sürekli GPS takibi/sapma ölçümü, e-posta kayıt sistemi ve resmî güvenlik entegrasyonu uygulanmadı.
 
 Öğrenci ekranındaki **Demo kontrolü** komutsuz arkadaş ekleme/onay, demo saatini şimdiye alma, operatör/görevli zinciri ve kişisel bildirim kutusunu içerir. Çıkış tarih-saatini elle seçerek 3 veya 10 saat sonrası için plan açılabilir. Google yürüyüş rotası/süre önizlemesi ile WhatsApp bildirim adaptörü eklendi; anahtarlar yokken gerçek rota veya mesaj üretilmez. Kampüs dışı kişisel yardım ve isteğe bağlı tek seferlik cihaz konumu, grup/yürüyüşten bağımsızdır. [Kurulum ve uçtan uca prova](docs/INTEGRATIONS.md).
 
@@ -48,6 +48,12 @@ Başlatma:
 Tek komut her iki sunucuyu başlatır. Önizleme: `http://127.0.0.1:5173`; API: `http://127.0.0.1:8000/docs`. Ctrl+C iki sunucuyu da kapatır. Yalnız backend için `-BackendOnly`; farklı portlar için `-Port 8001 -FrontendPort 5174` verilebilir. Kullanımdaki portta ikinci sunucu başlatılmaz.
 
 Öğrenci ekranında bir buluşma noktası, yurt ve çıkış saati seçip **Yol arkadaşı bul** düğmesine basın. Öğrenci erişim koduyla giriş yapılır; seçimler sunucuya bir plan olarak kaydedilir. Grup bulunduğunda her öğrenci kendi hesabından kabul verir. Ortak çıkış aralığında yürüyüş başlatılır; yardım talebi ve varış onayı aynı ekrandadır. Giriş kodu saklanmaz; sayfa yenilendiğinde HttpOnly oturum çereziyle mevcut plan geri yüklenir.
+
+Eşleşen üyeler, diğer öğrencilerin adlarını her kelimenin yalnızca ilk harfi açık olacak şekilde görür: `Miraç Burak Yorulmaz → M**** B**** Y*******`. Maskeleme sunucuda yapılır; eşleşme, grup kabulü, durum ve WebSocket yanıtları tam akran adı taşımaz. Kişi kendi hesabının adını normal görür. Demo hesaplarının kayıtlı adları sentetiktir.
+
+**Operatör:** `/operator` adresine `operator` hesabının erişim koduyla girin. **Talebi üstlen → Birim seç → Birimi sevk et** sırasını izleyin. Varış bildirimi geldikten sonra **Destek sürecini tamamla** ile talebi kapatın. Meşgul birim seçilemez; sunucu da aynı birime eşzamanlı atamayı engeller.
+
+**Saha görevlisi:** `/guard` adresine `guard-01` veya `guard-02` hesabının kendi koduyla girin. Yalnızca kendisine atanan işler görünür; tek görev aksiyonu **Olay yerine ulaşıldı** olur. Bir görevi kabul/ret veya operatör adına kapatma düğmesi yoktur. Taleplerde cihaz konumu varsa tek seferlik konum olarak gösterilir; buluşma noktası güncel öğrenci konumu diye sunulmaz. İki rolü eşzamanlı denemek için ayrı tarayıcı profilleri kullanın; aynı profildeki sekmeler oturumu paylaşır.
 
 Sunum verisi hazırlamak ve görevli/operatör işlemleri için `/demo` kullanılır. Bu sayfa **Canlı Backend (/api + WS)** modunda açılır. Presenter ile reset yapılır; farklı öğrencilerin kabulü ayrı tarayıcı oturumlarından veya konsolda ilgili kodlarla gösterilebilir. Aynı tarayıcıdaki sekmeler oturum çerezini paylaşır; farklı öğrenci/operatör hesapları için ayrı tarayıcı profili veya farklı tarayıcı kullanın. Öğrenci ekranı yerel simülatöre bağlı değildir.
 

@@ -30,7 +30,7 @@
     "must": ["Preserve Kovan amber identity", "Clearly label the pilot demo", "Keep help status truthful", "Support keyboard, mobile and reduced motion"],
     "avoid": ["API endpoints or versions in student UI", "Invented people or live location", "Unnecessary animation dependencies"]
   },
-  "decisions": ["2026-10-28: User requested a simple student journey. Use a light slate surface, amber actions, a shared-path illustration, and a three-stage journey. Keep the technical console at /demo.", "2026-10-28: Keep optional local simulation in a compact modal with journey, operator, notification and setup sections. Use the existing native dialog, buttons and icons. Manual date/time is primary. Real Google routes and WhatsApp delivery must never be represented by synthetic success."],
+  "decisions": ["2026-10-28: User requested a simple student journey. Use a light slate surface, amber actions, a shared-path illustration, and a three-stage journey. Keep the technical console at /demo.", "2026-10-28: Keep optional local simulation in a compact modal with journey, operator, notification and setup sections. Use the existing native dialog, buttons and icons. Manual date/time is primary. Real Google routes and WhatsApp delivery must never be represented by synthetic success.", "2026-10-28: Extend the student palette and native controls to /operator and /guard. Use a request queue and a focused detail panel, with one primary action per state. Field officers only see their own dispatches and report arrival. Group names are masked on the server; never expose full peer names to the browser."],
   "evidence": [],
   "generatedAt": "2026-10-27T22:31:55.394Z"
 }
